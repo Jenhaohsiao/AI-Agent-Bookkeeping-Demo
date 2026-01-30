@@ -105,12 +105,24 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
       refreshData();
     };
 
-    window.addEventListener("ai-transaction-added", handleAiAdd as EventListener);
-    window.addEventListener("ai-transaction-deleted", handleAiDelete as EventListener);
-    
+    window.addEventListener(
+      "ai-transaction-added",
+      handleAiAdd as EventListener,
+    );
+    window.addEventListener(
+      "ai-transaction-deleted",
+      handleAiDelete as EventListener,
+    );
+
     return () => {
-      window.removeEventListener("ai-transaction-added", handleAiAdd as EventListener);
-      window.removeEventListener("ai-transaction-deleted", handleAiDelete as EventListener);
+      window.removeEventListener(
+        "ai-transaction-added",
+        handleAiAdd as EventListener,
+      );
+      window.removeEventListener(
+        "ai-transaction-deleted",
+        handleAiDelete as EventListener,
+      );
     };
   }, []);
 
@@ -536,9 +548,10 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                     <div
                       key={t.id}
                       className={`flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg group border transition-all duration-500
-                        ${highlightedId === t.id 
-                          ? "border-blue-400 bg-blue-50 ring-2 ring-blue-300 ring-opacity-50 animate-pulse" 
-                          : "border-gray-100"
+                        ${
+                          highlightedId === t.id
+                            ? "border-blue-400 bg-blue-50 ring-2 ring-blue-300 ring-opacity-50 animate-pulse"
+                            : "border-gray-100"
                         }`}
                     >
                       <div className="flex items-center gap-3">

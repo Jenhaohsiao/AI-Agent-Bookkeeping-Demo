@@ -1,0 +1,5 @@
+{
+  "name": "Gemini Ledger Agent",
+  "description": "A MacOS-styled AI-powered calendar ledger. Features a dynamic split-screen UI, calendar management, data visualization, and a Gemini-powered AI agent capable of managing the database via function calling.",
+  "requestFramePermissions": []
+}

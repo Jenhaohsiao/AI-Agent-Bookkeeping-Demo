@@ -168,15 +168,67 @@ Before calling 'addTransaction', you MUST have ALL of the following information:
 - Be concise and helpful. Format monetary values with $ and thousands separators (e.g., $1,234.00).
 `;
 
+// Session storage key for user's custom API key
+const CUSTOM_API_KEY_STORAGE = 'gemini_custom_api_key';
+
+// Check if error is related to invalid/expired API key
+function isApiKeyError(error: any): boolean {
+  const message = error?.message?.toLowerCase() || '';
+  const status = error?.status || error?.httpStatus || 0;
+  
+  // Common API key related errors
+  return (
+    status === 401 ||
+    status === 403 ||
+    status === 429 ||
+    message.includes('api key') ||
+    message.includes('apikey') ||
+    message.includes('invalid') ||
+    message.includes('expired') ||
+    message.includes('quota') ||
+    message.includes('rate limit') ||
+    message.includes('unauthorized') ||
+    message.includes('forbidden') ||
+    message.includes('permission')
+  );
+}
+
+// Get current API key (custom or default)
+function getCurrentApiKey(): string {
+  const customKey = sessionStorage.getItem(CUSTOM_API_KEY_STORAGE);
+  return customKey || process.env.API_KEY || '';
+}
+
+// Set custom API key
+export function setCustomApiKey(apiKey: string): void {
+  sessionStorage.setItem(CUSTOM_API_KEY_STORAGE, apiKey);
+  // Reinitialize the agent with new key
+  geminiAgent.reinitialize(apiKey);
+}
+
+// Clear custom API key
+export function clearCustomApiKey(): void {
+  sessionStorage.removeItem(CUSTOM_API_KEY_STORAGE);
+}
+
+// Check if using custom key
+export function isUsingCustomKey(): boolean {
+  return !!sessionStorage.getItem(CUSTOM_API_KEY_STORAGE);
+}
+
 export class GeminiAgent {
   private ai: GoogleGenAI;
   private chatSession: any;
 
   constructor() {
-    // NOTE: This assumes process.env.API_KEY is available.
-    // In a real deployed app, you'd handle this via a backend proxy or user input if client-side.
-    // For this demo structure, we assume the environment is set up or key is passed.
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = getCurrentApiKey();
+    this.ai = new GoogleGenAI({ apiKey });
+  }
+
+  // Reinitialize with a new API key
+  reinitialize(apiKey: string): void {
+    this.ai = new GoogleGenAI({ apiKey });
+    this.chatSession = null;
   }
 
   async startChat() {
@@ -192,20 +244,21 @@ export class GeminiAgent {
   async sendMessage(message: string): Promise<string> {
     if (!this.chatSession) await this.startChat();
 
-    // 1. Send user message
-    let result = await this.chatSession.sendMessage({ message });
-    
-    // 2. Loop to handle function calls
-    while (result.functionCalls && result.functionCalls.length > 0) {
-      const functionResponses: any[] = [];
+    try {
+      // 1. Send user message
+      let result = await this.chatSession.sendMessage({ message });
+      
+      // 2. Loop to handle function calls
+      while (result.functionCalls && result.functionCalls.length > 0) {
+        const functionResponses: any[] = [];
 
-      for (const call of result.functionCalls) {
-        console.log("Tool Call:", call.name, call.args);
-        let apiResponse: any = { error: "Unknown tool" };
+        for (const call of result.functionCalls) {
+          console.log("Tool Call:", call.name, call.args);
+          let apiResponse: any = { error: "Unknown tool" };
 
-        try {
-          if (call.name === "addTransaction") {
-            const args = call.args as any;
+          try {
+            if (call.name === "addTransaction") {
+              const args = call.args as any;
             apiResponse = await db.add({
                 date: args.date,
                 type: args.type as TransactionType,
@@ -307,6 +360,23 @@ export class GeminiAgent {
 
     // 4. Return final text
     return result.text || "我已處理完成，但沒有文字回應。";
+    } catch (error: any) {
+      console.error("Gemini API Error:", error);
+      
+      // Check if it's an API key related error
+      if (isApiKeyError(error)) {
+        // Reset chat session so it can be reinitialized with new key
+        this.chatSession = null;
+        // Throw special error to trigger API key dialog
+        const apiKeyError = new Error('API_KEY_INVALID');
+        (apiKeyError as any).isApiKeyError = true;
+        (apiKeyError as any).originalError = error;
+        throw apiKeyError;
+      }
+      
+      // Re-throw other errors
+      throw error;
+    }
   }
 }
 

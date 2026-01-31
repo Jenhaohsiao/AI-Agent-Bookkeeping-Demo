@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { geminiAgent } from "../services/geminiService";
+import { geminiAgent, setCustomApiKey } from "../services/geminiService";
 import { ChatMessage } from "../types";
 import { Send, Bot, User, Sparkles, Mic, MicOff, Globe } from "lucide-react";
 import * as OpenCC from "opencc-js";
@@ -9,6 +9,7 @@ import {
   isSimplifiedChinese,
   Language,
 } from "../i18n";
+import { ApiKeyDialog } from "./ApiKeyDialog";
 
 // Create Simplified to Traditional Chinese converter
 const converter = OpenCC.Converter({ from: "cn", to: "tw" });
@@ -140,6 +141,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
@@ -261,18 +263,52 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
         content: responseText,
       };
       setMessages((prev) => [...prev, aiMsg]);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      const errorMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "model",
-        content:
-          "Sorry, I encountered an error connecting to Gemini. Please check your API Key.",
-      };
-      setMessages((prev) => [...prev, errorMsg]);
+      
+      // Check if it's an API key error
+      if (error?.isApiKeyError || error?.message === 'API_KEY_INVALID') {
+        setShowApiKeyDialog(true);
+        const errorMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "model",
+          content: language === 'en' 
+            ? "The API key is invalid or has exceeded its quota. Please provide your own API key or try again later."
+            : language === 'zh-CN'
+            ? "API Key 无效或已超出使用额度。请提供您自己的 API Key，或稍后再试。"
+            : "API Key 無效或已超出使用額度。請提供您自己的 API Key，或稍後再試。",
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+      } else {
+        const errorMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "model",
+          content:
+            "Sorry, I encountered an error connecting to Gemini. Please check your API Key.",
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+      }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Handle custom API key submission
+  const handleApiKeySubmit = (apiKey: string) => {
+    setCustomApiKey(apiKey);
+    setShowApiKeyDialog(false);
+    
+    // Add confirmation message
+    const confirmMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: "model",
+      content: language === 'en'
+        ? "Your API key has been set. You can now continue using the AI assistant. Your key is stored only in this browser session and will be cleared when you close the tab."
+        : language === 'zh-CN'
+        ? "您的 API Key 已设置成功。现在可以继续使用 AI 助手。您的 Key 仅储存于此浏览器会话中，关闭分页后将自动清除。"
+        : "您的 API Key 已設置成功。現在可以繼續使用 AI 助手。您的 Key 僅儲存於此瀏覽器會話中，關閉分頁後將自動清除。",
+    };
+    setMessages((prev) => [...prev, confirmMsg]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -409,6 +445,13 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
             : t("aiDisclaimer")}
         </p>
       </div>
+
+      {/* API Key Dialog */}
+      <ApiKeyDialog
+        isOpen={showApiKeyDialog}
+        onClose={() => setShowApiKeyDialog(false)}
+        onSubmit={handleApiKeySubmit}
+      />
     </div>
   );
 };

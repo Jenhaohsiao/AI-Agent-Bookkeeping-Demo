@@ -327,6 +327,117 @@ export const Calculator: React.FC<CalculatorProps> = ({ isOpen, onClose }) => {
     });
   }, []);
 
+  // Keyboard support
+  useEffect(() => {
+    if (!isOpen || isAiControlled) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't interfere if user is typing in an input field
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      const key = e.key;
+
+      // Number keys
+      if (/^[0-9]$/.test(key)) {
+        e.preventDefault();
+        setActiveButton(key);
+        inputDigit(key);
+        setTimeout(() => setActiveButton(null), 100);
+        return;
+      }
+
+      // Operators
+      if (key === '+') {
+        e.preventDefault();
+        setActiveButton('+');
+        performOperation('+');
+        setTimeout(() => setActiveButton(null), 100);
+        return;
+      }
+      if (key === '-') {
+        e.preventDefault();
+        setActiveButton('-');
+        performOperation('-');
+        setTimeout(() => setActiveButton(null), 100);
+        return;
+      }
+      if (key === '*') {
+        e.preventDefault();
+        setActiveButton('×');
+        performOperation('×');
+        setTimeout(() => setActiveButton(null), 100);
+        return;
+      }
+      if (key === '/') {
+        e.preventDefault();
+        setActiveButton('÷');
+        performOperation('÷');
+        setTimeout(() => setActiveButton(null), 100);
+        return;
+      }
+
+      // Decimal point
+      if (key === '.' || key === ',') {
+        e.preventDefault();
+        setActiveButton('.');
+        inputDecimal();
+        setTimeout(() => setActiveButton(null), 100);
+        return;
+      }
+
+      // Enter or = for calculate
+      if (key === 'Enter' || key === '=') {
+        e.preventDefault();
+        setActiveButton('=');
+        calculate();
+        setTimeout(() => setActiveButton(null), 100);
+        return;
+      }
+
+      // Escape to close
+      if (key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      // Backspace for clear entry
+      if (key === 'Backspace') {
+        e.preventDefault();
+        setActiveButton('CE');
+        clearEntry();
+        setTimeout(() => setActiveButton(null), 100);
+        return;
+      }
+
+      // Delete for clear all
+      if (key === 'Delete') {
+        e.preventDefault();
+        setActiveButton('C');
+        clearAll();
+        setTimeout(() => setActiveButton(null), 100);
+        return;
+      }
+
+      // Percent
+      if (key === '%') {
+        e.preventDefault();
+        setActiveButton('%');
+        inputPercent();
+        setTimeout(() => setActiveButton(null), 100);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, isAiControlled, inputDigit, inputDecimal, performOperation, calculate, clearEntry, clearAll, inputPercent, onClose]);
+
   // Listen for AI calculation requests
   useEffect(() => {
     const handleAiCalculate = async (e: CustomEvent) => {
@@ -509,18 +620,20 @@ export const Calculator: React.FC<CalculatorProps> = ({ isOpen, onClose }) => {
   return (
     <div
       ref={calculatorRef}
-      className="fixed z-50 select-none print:hidden"
+      className="fixed z-50 print:hidden"
       style={{
         left: position.x,
         top: position.y,
       }}
+      tabIndex={0}
+      onFocus={() => {}}
     >
       <div
         className={`w-[280px] bg-white rounded-2xl shadow-2xl border overflow-hidden transition-all ${isAiControlled ? "border-amber-400 ring-2 ring-amber-200" : "border-gray-200"}`}
       >
         {/* Header - Draggable */}
         <div
-          className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 p-3 cursor-move flex items-center justify-between"
+          className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 p-3 cursor-move flex items-center justify-between select-none"
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
         >
@@ -549,9 +662,19 @@ export const Calculator: React.FC<CalculatorProps> = ({ isOpen, onClose }) => {
         >
           <div className="flex items-center justify-between gap-2">
             <div className="flex-1 text-right text-3xl font-bold text-gray-800 overflow-hidden">
-              <span data-calc-display className="block truncate">
-                {formatDisplay(display)}
-              </span>
+              <input
+                type="text"
+                readOnly
+                value={formatDisplay(display)}
+                data-calc-display
+                className="w-full text-right bg-transparent outline-none cursor-text select-all"
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+                onKeyDown={(e) => {
+                  // Allow copy shortcuts but prevent other keys from interfering
+                  if (e.ctrlKey || e.metaKey) return;
+                  e.preventDefault();
+                }}
+              />
             </div>
             <button
               onClick={copyToClipboard}
@@ -560,7 +683,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ isOpen, onClose }) => {
                   ? "bg-green-100 text-green-600"
                   : "bg-gray-100 text-gray-500 hover:bg-amber-100 hover:text-amber-600"
               }`}
-              title="Copy to clipboard"
+              title="Copy to clipboard (Ctrl+C)"
             >
               {copied ? <Check size={16} /> : <Copy size={16} />}
             </button>
@@ -591,10 +714,10 @@ export const Calculator: React.FC<CalculatorProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer hint */}
-        <div className="px-3 pb-2 text-center text-[10px] text-gray-400">
+        <div className="px-3 pb-2 text-center text-[10px] text-gray-400 select-none">
           {isAiControlled
             ? "AI is using the calculator"
-            : "Drag header to move"}
+            : "Keyboard: 0-9 +-*/ Enter=計算 Esc=關閉"}
         </div>
       </div>
     </div>

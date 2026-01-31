@@ -1,15 +1,76 @@
 import React, { useState, useRef, useEffect } from "react";
 import { geminiAgent } from "../services/geminiService";
 import { ChatMessage } from "../types";
-import { Send, Bot, User, Sparkles, Mic, MicOff, X } from "lucide-react";
+import { Send, Bot, User, Sparkles, Mic, MicOff, Globe } from "lucide-react";
 import * as OpenCC from "opencc-js";
+import {
+  useLanguage,
+  containsChinese,
+  isSimplifiedChinese,
+  Language,
+} from "../i18n";
 
 // 建立簡體轉繁體轉換器
 const converter = OpenCC.Converter({ from: "cn", to: "tw" });
 
-// 檢測文字是否包含中文
-const containsChinese = (text: string): boolean => {
-  return /[\u4e00-\u9fff]/.test(text);
+// 語言選擇下拉組件
+const LanguageSelector: React.FC = () => {
+  const { language, setLanguage, setIsManuallySet, t } = useLanguage();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const languages: { code: Language; label: string; flag: string }[] = [
+    { code: "en", label: "EN", flag: "🌐" },
+    { code: "zh-TW", label: "繁體", flag: "🇹🇼" },
+    { code: "zh-CN", label: "简体", flag: "🇨🇳" },
+  ];
+
+  const currentLang =
+    languages.find((l) => l.code === language) || languages[0];
+
+  const handleSelect = (code: Language) => {
+    setLanguage(code);
+    setIsManuallySet(true);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-white/20 backdrop-blur text-white rounded-full hover:bg-white/30 transition font-medium"
+      >
+        <Globe size={12} />
+        <span>
+          {currentLang.flag} {currentLang.label}
+        </span>
+      </button>
+
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 min-w-[100px]">
+            {languages.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => handleSelect(lang.code)}
+                className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition ${
+                  language === lang.code
+                    ? "bg-amber-50 text-amber-600 font-medium"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <span>{lang.flag}</span>
+                <span>{lang.label}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 };
 
 // Web Speech API types
@@ -47,115 +108,61 @@ interface RightPanelProps {
   className?: string;
 }
 
-// 語言選擇對話框組件
-const LanguageDialog: React.FC<{
-  text: string;
-  onSelect: (useTraditional: boolean) => void;
-  onClose: () => void;
-}> = ({ text, onSelect, onClose }) => {
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold text-gray-800">確認文字格式</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="bg-gray-100 rounded-lg p-4 mb-4">
-          <p className="text-sm text-gray-600 mb-1">語音辨識結果：</p>
-          <p className="text-gray-800 font-medium">{text}</p>
-        </div>
-
-        <p className="text-sm text-gray-600 mb-4">
-          請選擇您想要使用的文字格式：
-        </p>
-
-        <div className="flex gap-3">
-          <button
-            onClick={() => onSelect(true)}
-            className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl font-medium hover:from-amber-500 hover:to-orange-600 transition shadow-lg"
-          >
-            🇹🇼 繁體中文
-          </button>
-          <button
-            onClick={() => onSelect(false)}
-            className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition"
-          >
-            🇨🇳 簡體中文
-          </button>
-        </div>
-
-        <p className="text-xs text-gray-400 text-center mt-3">
-          選擇後會記住您的偏好
-        </p>
-      </div>
-    </div>
-  );
-};
-
 export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
+  const { language, setLanguage, isManuallySet, setIsManuallySet, t } =
+    useLanguage();
+
+  // Generate initial greeting based on language
+  const getInitialGreeting = (): string => {
+    return `${t("aiGreeting")}\n\n${t("aiHelpIntro")}\n${t("aiHelp1")}\n${t("aiHelp2")}\n${t("aiHelp3")}\n\n${t("aiPrompt")}`;
+  };
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "0",
       role: "model",
-      content:
-        "嗨！我是您的 AI 財務助理 ✨\n\n我可以幫您：\n📝 記錄收支\n📊 分析消費\n📈 生成報表\n\n請問今天想記什麼呢？",
+      content: getInitialGreeting(),
     },
   ]);
+
+  // Update greeting when language changes
+  useEffect(() => {
+    setMessages([
+      {
+        id: "0",
+        role: "model",
+        content: getInitialGreeting(),
+      },
+    ]);
+  }, [language]);
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
-  const [showLanguageDialog, setShowLanguageDialog] = useState(false);
-  const [pendingText, setPendingText] = useState("");
-  const [languagePreference, setLanguagePreference] = useState<
-    "traditional" | "simplified" | null
-  >(() => {
-    // 從 localStorage 讀取用戶偏好
-    const saved = localStorage.getItem("languagePreference");
-    return saved as "traditional" | "simplified" | null;
-  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  // 處理語音辨識結果
+  // 處理語音辨識結果 - 根據當前語言設定自動轉換
   const handleSpeechResult = (transcript: string) => {
     if (containsChinese(transcript)) {
-      // 如果已有語言偏好，直接套用
-      if (languagePreference === "traditional") {
+      // 如果已選擇繁體中文，自動轉換
+      if (language === "zh-TW") {
         setInput(converter(transcript));
-      } else if (languagePreference === "simplified") {
+      } else if (language === "zh-CN") {
+        // 簡體中文，保持原樣
         setInput(transcript);
       } else {
-        // 沒有偏好，顯示對話框詢問
-        setPendingText(transcript);
-        setShowLanguageDialog(true);
+        // 英文模式下輸入中文，轉換為繁體並切換語言
+        setInput(converter(transcript));
+        if (!isManuallySet) {
+          setLanguage("zh-TW");
+        }
       }
     } else {
       // 非中文，直接使用
       setInput(transcript);
     }
-  };
-
-  // 處理語言選擇
-  const handleLanguageSelect = (useTraditional: boolean) => {
-    const preference = useTraditional ? "traditional" : "simplified";
-    setLanguagePreference(preference);
-    localStorage.setItem("languagePreference", preference);
-
-    if (useTraditional) {
-      setInput(converter(pendingText));
-    } else {
-      setInput(pendingText);
-    }
-
-    setShowLanguageDialog(false);
-    setPendingText("");
   };
 
   // Check for speech recognition support
@@ -179,8 +186,12 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
         if (isFinal) {
           handleSpeechResult(transcript);
         } else {
-          // 中間結果，暫時顯示原始文字
-          setInput(transcript);
+          // 中間結果，根據語言設定即時轉換顯示
+          if (language === "zh-TW" && containsChinese(transcript)) {
+            setInput(converter(transcript));
+          } else {
+            setInput(transcript);
+          }
         }
       };
 
@@ -195,7 +206,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
 
       recognitionRef.current = recognition;
     }
-  }, [languagePreference]);
+  }, [language]);
 
   const toggleListening = () => {
     if (!recognitionRef.current) return;
@@ -211,12 +222,6 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
     }
   };
 
-  // 重置語言偏好（可選功能）
-  const resetLanguagePreference = () => {
-    setLanguagePreference(null);
-    localStorage.removeItem("languagePreference");
-  };
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -227,6 +232,17 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
+
+    // Auto-detect language from user input (only if not manually set)
+    if (!isManuallySet && containsChinese(input)) {
+      // Check if it's simplified Chinese
+      if (isSimplifiedChinese(input)) {
+        setLanguage("zh-CN");
+      } else {
+        // Default to Traditional Chinese for Chinese input
+        setLanguage("zh-TW");
+      }
+    }
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -270,38 +286,17 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
     <div
       className={`flex flex-col h-full bg-gradient-to-b from-amber-50/30 to-white ${className}`}
     >
-      {/* Language Selection Dialog */}
-      {showLanguageDialog && (
-        <LanguageDialog
-          text={pendingText}
-          onSelect={handleLanguageSelect}
-          onClose={() => {
-            setShowLanguageDialog(false);
-            setInput(pendingText);
-            setPendingText("");
-          }}
-        />
-      )}
-
       {/* Header - Modern Style */}
       <div className="p-4 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-white">
           <Sparkles size={20} />
         </div>
         <div className="flex-1">
-          <h2 className="font-bold text-white text-base">AI 助理</h2>
-          <p className="text-xs text-amber-100">Powered by Gemini</p>
+          <h2 className="font-bold text-white text-base">{t("aiTitle")}</h2>
+          <p className="text-xs text-amber-100">{t("aiSubtitle")}</p>
         </div>
-        {/* 語言偏好指示器 */}
-        {languagePreference && (
-          <button
-            onClick={resetLanguagePreference}
-            className="text-xs px-3 py-1.5 bg-white/20 backdrop-blur text-white rounded-full hover:bg-white/30 transition font-medium"
-            title="點擊重置語言偏好"
-          >
-            {languagePreference === "traditional" ? "🇹🇼 繁體" : "🇨🇳 簡體"}
-          </button>
-        )}
+        {/* Language Selector */}
+        <LanguageSelector />
       </div>
 
       {/* Chat Area */}
@@ -390,9 +385,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={
-                isListening
-                  ? "🎤 正在聆聽..."
-                  : "輸入訊息或點擊麥克風語音輸入..."
+                isListening ? "🎤 Listening..." : t("inputPlaceholder")
               }
               className={`w-full bg-gray-50 text-gray-800 rounded-xl pl-4 pr-14 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 focus:bg-white resize-none h-14 custom-scrollbar transition-all border border-gray-200 ${
                 isListening
@@ -412,8 +405,8 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
         </div>
         <p className="text-center text-[10px] text-gray-400 mt-2">
           {isListening
-            ? "🎤 說完後點擊麥克風停止，或等待自動結束"
-            : "AI 可能會犯錯，請自行確認重要資訊"}
+            ? "🎤 Tap mic to stop or wait for auto-end"
+            : t("aiDisclaimer")}
         </p>
       </div>
     </div>

@@ -44,6 +44,7 @@ import {
   Legend,
 } from "recharts";
 import { CATEGORIES, CATEGORY_CONFIG } from "../constants";
+import { useLanguage } from "../i18n";
 
 // 千分位格式化函數
 const formatNumber = (num: number): string => {
@@ -72,6 +73,8 @@ interface LeftPanelProps {
 }
 
 export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
+  const { t, tArray, getCategoryName, language } = useLanguage();
+
   const [viewMode, setViewMode] = useState<ViewMode>("entry");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -145,10 +148,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
       "ai-transaction-deleted",
       handleAiDelete as EventListener,
     );
-    window.addEventListener(
-      "ai-print-report",
-      handleAiPrint as EventListener,
-    );
+    window.addEventListener("ai-print-report", handleAiPrint as EventListener);
 
     return () => {
       window.removeEventListener(
@@ -358,22 +358,22 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
     };
 
     return (
-      <div className="bg-white p-3 rounded-2xl shadow-lg border border-gray-100">
+      <div className="bg-white p-2 md:p-3 rounded-xl md:rounded-2xl shadow-lg border border-gray-100">
         {/* Header with arrows and dropdowns */}
         <div className="flex justify-between items-center mb-2">
           <button
             onClick={goToPrevMonth}
-            className="w-8 h-8 flex items-center justify-center hover:bg-amber-50 rounded-xl transition-colors text-gray-400 hover:text-amber-600"
+            className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center hover:bg-amber-50 rounded-lg md:rounded-xl transition-colors text-gray-400 hover:text-amber-600"
             title="Previous Month"
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={16} className="md:w-[18px] md:h-[18px]" />
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <select
               value={currentMonth.getMonth()}
               onChange={handleMonthChange}
-              className="text-sm font-bold text-gray-800 bg-transparent border-none cursor-pointer hover:text-amber-600 focus:outline-none"
+              className="text-xs md:text-sm font-bold text-gray-800 bg-transparent border-none cursor-pointer hover:text-amber-600 focus:outline-none"
             >
               {monthNames.map((name, i) => (
                 <option key={i} value={i}>
@@ -384,7 +384,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
             <select
               value={currentMonth.getFullYear()}
               onChange={handleYearChange}
-              className="text-sm font-bold text-gray-800 bg-transparent border-none cursor-pointer hover:text-amber-600 focus:outline-none"
+              className="text-xs md:text-sm font-bold text-gray-800 bg-transparent border-none cursor-pointer hover:text-amber-600 focus:outline-none"
             >
               {yearOptions.map((year) => (
                 <option key={year} value={year}>
@@ -394,34 +394,43 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
             </select>
             <button
               onClick={goToToday}
-              className="ml-2 px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 font-medium"
+              className="ml-1 md:ml-2 px-1.5 md:px-2 py-0.5 md:py-1 text-[10px] md:text-xs bg-amber-100 text-amber-700 rounded-md md:rounded-lg hover:bg-amber-200 font-medium"
             >
-              今天
+              {t("today")}
             </button>
           </div>
 
           <button
             onClick={goToNextMonth}
-            className="w-8 h-8 flex items-center justify-center hover:bg-amber-50 rounded-xl transition-colors text-gray-400 hover:text-amber-600"
+            className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center hover:bg-amber-50 rounded-lg md:rounded-xl transition-colors text-gray-400 hover:text-amber-600"
             title="Next Month"
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={16} className="md:w-[18px] md:h-[18px]" />
           </button>
         </div>
 
         <div className="grid grid-cols-7 gap-0.5 text-center">
-          {["日", "一", "二", "三", "四", "五", "六"].map((d, i) => (
-            <div key={i} className="py-1 text-xs font-medium text-gray-400">
+          {tArray("weekdaysShort").map((d, i) => (
+            <div
+              key={i}
+              className="py-0.5 md:py-1 text-[10px] md:text-xs font-medium text-gray-400"
+            >
               {d}
             </div>
           ))}
           {/* Empty cells for days before the first of month */}
           {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-            <div key={`empty-${i}`} className="p-2"></div>
+            <div key={`empty-${i}`} className="p-1 md:p-2"></div>
           ))}
           {days.map((d) => {
             const dateStr = format(d, "yyyy-MM-dd");
-            const hasData = transactions.some((t) => t.date === dateStr);
+            const dayTransactions = transactions.filter(
+              (t) => t.date === dateStr,
+            );
+            const hasIncome = dayTransactions.some((t) => t.type === "income");
+            const hasExpense = dayTransactions.some(
+              (t) => t.type === "expense",
+            );
             const isSelected = dateStr === selectedDate;
             const isToday = dateStr === format(new Date(), "yyyy-MM-dd");
             return (
@@ -429,7 +438,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                 key={dateStr}
                 onClick={() => setSelectedDate(dateStr)}
                 className={`
-                  relative w-full aspect-square flex items-center justify-center rounded-xl text-sm font-medium transition-all
+                  relative w-full aspect-square flex items-center justify-center rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-all
                   ${
                     isSelected
                       ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg scale-105"
@@ -440,8 +449,19 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                 `}
               >
                 {format(d, "d")}
-                {hasData && !isSelected && (
-                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-orange-400 rounded-full"></div>
+                {(hasIncome || hasExpense) && (
+                  <div className="absolute bottom-0.5 md:bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                    {hasExpense && (
+                      <div
+                        className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full ${isSelected ? "bg-red-200" : "bg-red-400"}`}
+                      ></div>
+                    )}
+                    {hasIncome && (
+                      <div
+                        className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full ${isSelected ? "bg-green-200" : "bg-green-400"}`}
+                      ></div>
+                    )}
+                  </div>
                 )}
               </button>
             );
@@ -456,78 +476,73 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
       className={`flex flex-col h-full bg-gradient-to-br from-amber-50/50 via-white to-blue-50/50 ${className} overflow-hidden`}
     >
       {/* Modern Header with Gradient */}
-      <div className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 text-white p-4 no-print">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-              <Wallet size={20} />
-            </div>
-            <div>
-              <h1 className="font-bold text-lg">智能記帳本</h1>
-              <p className="text-xs text-amber-100">AI-Powered Ledger</p>
-            </div>
+      <div className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 text-white p-3 md:p-4 no-print">
+        <div className="flex items-center justify-between mb-3 md:mb-4 gap-2">
+          <div className="min-w-0 flex-shrink">
+            <h1 className="font-bold text-sm md:text-lg truncate">
+              {t("appTitle")}
+            </h1>
+            <p className="text-[10px] md:text-xs text-amber-100 truncate">
+              {t("appSubtitle")}
+            </p>
           </div>
-          <div className="flex bg-white/20 backdrop-blur rounded-xl p-1">
+          <div className="flex bg-white/20 backdrop-blur rounded-xl p-0.5 md:p-1 flex-shrink-0">
             <button
               onClick={() => setViewMode("entry")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${viewMode === "entry" ? "bg-white text-amber-600 shadow-lg" : "text-white/90 hover:bg-white/10"}`}
+              className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2 ${viewMode === "entry" ? "bg-white text-amber-600 shadow-lg" : "text-white/90 hover:bg-white/10"}`}
             >
-              <CalIcon size={14} /> 記帳
+              <CalIcon size={12} className="md:w-3.5 md:h-3.5" />{" "}
+              <span className="hidden sm:inline">{t("tabEntry")}</span>
+              <span className="sm:hidden">📝</span>
             </button>
             <button
               onClick={() => setViewMode("report")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${viewMode === "report" ? "bg-white text-amber-600 shadow-lg" : "text-white/90 hover:bg-white/10"}`}
+              className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2 ${viewMode === "report" ? "bg-white text-amber-600 shadow-lg" : "text-white/90 hover:bg-white/10"}`}
             >
-              <BarChart2 size={14} /> 報表
+              <BarChart2 size={12} className="md:w-3.5 md:h-3.5" />{" "}
+              <span className="hidden sm:inline">{t("tabReport")}</span>
+              <span className="sm:hidden">📊</span>
             </button>
           </div>
         </div>
 
-        {/* Balance Summary Cards */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white/20 backdrop-blur rounded-xl p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingUp size={14} className="text-green-200" />
-              <span className="text-xs text-amber-100">收入</span>
-            </div>
-            <p className="text-lg font-bold">${formatNumber(totalIncome)}</p>
+        {/* Balance Summary Cards - Compact */}
+        <div className="flex gap-2 md:gap-3 text-xs md:text-sm">
+          <div className="flex-1 bg-white/20 backdrop-blur rounded-lg px-2 py-1.5 md:px-3 md:py-2 min-w-0">
+            <span className="text-amber-100 mr-1">{t("income")}</span>
+            <span className="font-bold">${formatNumber(totalIncome)}</span>
           </div>
-          <div className="bg-white/20 backdrop-blur rounded-xl p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingDown size={14} className="text-red-200" />
-              <span className="text-xs text-amber-100">支出</span>
-            </div>
-            <p className="text-lg font-bold">${formatNumber(totalExpense)}</p>
+          <div className="flex-1 bg-white/20 backdrop-blur rounded-lg px-2 py-1.5 md:px-3 md:py-2 min-w-0">
+            <span className="text-amber-100 mr-1">{t("expense")}</span>
+            <span className="font-bold">${formatNumber(totalExpense)}</span>
           </div>
-          <div className="bg-white/20 backdrop-blur rounded-xl p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Wallet size={14} className="text-amber-200" />
-              <span className="text-xs text-amber-100">結餘</span>
-            </div>
-            <p
-              className={`text-lg font-bold ${totalIncome - totalExpense >= 0 ? "text-white" : "text-red-200"}`}
+          <div className="flex-1 bg-white/20 backdrop-blur rounded-lg px-2 py-1.5 md:px-3 md:py-2 min-w-0">
+            <span className="text-amber-100 mr-1">{t("balance")}</span>
+            <span
+              className={`font-bold ${totalIncome - totalExpense >= 0 ? "text-white" : "text-red-200"}`}
             >
               ${formatNumber(totalIncome - totalExpense)}
-            </p>
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-3 md:space-y-4 custom-scrollbar">
         {viewMode === "entry" && (
           <>
-            {/* Calendar & Form Split - Stack on mobile, side-by-side on tablet+ */}
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="md:w-[40%]">
+            {/* Calendar & Form - Stack vertically on mobile */}
+            <div className="flex flex-col lg:flex-row gap-3">
+              {/* Calendar - Full width on mobile */}
+              <div className="w-full lg:w-[40%] flex-shrink-0">
                 <CalendarWidget />
               </div>
 
-              {/* Add/Edit Form - Modern Style */}
-              <div className="md:w-[60%] bg-white p-4 rounded-2xl shadow-lg border border-gray-100">
-                {/* Type Selection with Icon - Same Row */}
+              {/* Add/Edit Form */}
+              <div className="w-full lg:w-[60%] bg-white p-3 md:p-4 rounded-xl md:rounded-2xl shadow-lg border border-gray-100">
+                {/* Type Selection */}
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Plus size={16} className="text-white" />
+                  <span className="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Plus size={14} className="text-white md:w-4 md:h-4" />
                   </span>
                   <button
                     type="button"
@@ -538,14 +553,14 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                         category: CATEGORIES.expense[0],
                       })
                     }
-                    className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
+                    className={`flex-1 py-2 rounded-lg md:rounded-xl font-medium transition-all flex items-center justify-center gap-1 text-xs md:text-sm ${
                       formData.type === "expense"
                         ? "bg-red-500 text-white shadow-lg"
                         : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                     }`}
                   >
-                    <TrendingDown size={18} />
-                    支出
+                    <TrendingDown size={14} />
+                    {t("expense")}
                   </button>
                   <button
                     type="button"
@@ -556,62 +571,61 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                         category: CATEGORIES.income[0],
                       })
                     }
-                    className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
+                    className={`flex-1 py-2 rounded-lg md:rounded-xl font-medium transition-all flex items-center justify-center gap-1 text-xs md:text-sm ${
                       formData.type === "income"
                         ? "bg-green-500 text-white shadow-lg"
                         : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                     }`}
                   >
-                    <TrendingUp size={18} />
-                    收入
+                    <TrendingUp size={14} />
+                    {t("income")}
                   </button>
                 </div>
 
-                {/* Responsive Layout: Stack on mobile, side-by-side on tablet+ */}
-                <div className="flex flex-col md:flex-row gap-3">
-                  {/* Category Grid */}
-                  <div className="md:w-[65%]">
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {CATEGORIES[formData.type as TransactionType].map((c) => {
-                        const config = CATEGORY_CONFIG[c] || {
-                          icon: "📝",
-                          color: "#6b7280",
-                          bgColor: "#f3f4f6",
-                        };
-                        const isActive = formData.category === c;
-                        return (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() =>
-                              setFormData({ ...formData, category: c })
-                            }
-                            className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
-                              isActive
-                                ? "ring-2 ring-amber-400 shadow-md scale-105"
-                                : "hover:scale-105"
-                            }`}
-                            style={{
-                              backgroundColor: isActive
-                                ? config.bgColor
-                                : "#f9fafb",
-                            }}
-                          >
-                            <span className="text-2xl mb-0.5">{config.icon}</span>
-                            <span className="text-[10px] font-medium text-gray-600 truncate w-full text-center">
-                              {c}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                {/* Category Grid - Always on top, form below */}
+                <div className="grid grid-cols-5 gap-1 mb-3">
+                  {CATEGORIES[formData.type as TransactionType].map((c) => {
+                    const config = CATEGORY_CONFIG[c] || {
+                      icon: "📝",
+                      color: "#6b7280",
+                      bgColor: "#f3f4f6",
+                    };
+                    const isActive = formData.category === c;
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() =>
+                          setFormData({ ...formData, category: c })
+                        }
+                        className={`flex flex-col items-center justify-center p-1 md:p-1.5 rounded-lg transition-all ${
+                          isActive
+                            ? "ring-2 ring-amber-400 shadow-md"
+                            : "hover:bg-gray-100"
+                        }`}
+                        style={{
+                          backgroundColor: isActive
+                            ? config.bgColor
+                            : "#f9fafb",
+                        }}
+                      >
+                        <span className="text-base md:text-xl">
+                          {config.icon}
+                        </span>
+                        <span className="text-[7px] md:text-[9px] font-medium text-gray-600 truncate w-full text-center leading-tight">
+                          {getCategoryName(c)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-                  {/* Form */}
-                  <form onSubmit={handleSubmit} className="md:w-[35%] flex flex-col gap-2">
+                {/* Form Fields - Horizontal on mobile */}
+                <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+                  <div className="flex gap-2">
                     {/* Amount Input */}
-                    <div className="relative bg-gray-50 rounded-xl p-2">
-                      <span className="text-gray-400 text-lg font-bold absolute left-2 top-1/2 -translate-y-1/2">
+                    <div className="relative bg-gray-50 rounded-lg flex-1">
+                      <span className="text-gray-400 text-sm font-bold absolute left-2 top-1/2 -translate-y-1/2">
                         $
                       </span>
                       <input
@@ -623,107 +637,115 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                         onChange={(e) =>
                           setFormData({ ...formData, amount: e.target.value })
                         }
-                        className="w-full pl-6 text-xl font-bold text-gray-800 bg-transparent border-none focus:outline-none text-center"
+                        className="w-full py-2 pl-6 pr-2 text-base font-bold text-gray-800 bg-transparent border-none focus:outline-none"
                       />
                     </div>
-
+                    {/* Description */}
                     <input
                       type="text"
-                      placeholder="備註 (選填，最多15字)"
+                      placeholder={t("description")}
                       maxLength={15}
                       value={formData.description}
                       onChange={(e) =>
-                        setFormData({ ...formData, description: e.target.value })
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
                       }
-                      className="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:ring-2 focus:ring-amber-200 focus:border-amber-400 outline-none"
+                      className="flex-1 py-2 px-3 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-amber-200 focus:border-amber-400 outline-none"
                     />
+                  </div>
 
-                    <div className="flex gap-2">
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white py-2 rounded-lg text-sm font-bold transition-all shadow-lg"
+                    >
+                      {isEditing ? t("update") : t("save")}
+                    </button>
+                    {isEditing && (
                       <button
-                        type="submit"
-                        className="flex-1 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg hover:shadow-xl"
+                        type="button"
+                        onClick={() => setIsEditing(null)}
+                        className="px-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-600 font-medium"
                       >
-                        {isEditing ? "更新" : "儲存"}
+                        {t("cancel")}
                       </button>
-                      {isEditing && (
-                        <button
-                          type="button"
-                          onClick={() => setIsEditing(null)}
-                          className="px-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm text-gray-600 font-medium"
-                        >
-                          取消
-                        </button>
-                      )}
-                    </div>
-                  </form>
-                </div>
+                    )}
+                  </div>
+                </form>
               </div>
             </div>
 
-            {/* Daily List - Modern */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4">
-              <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
-                📅 {selectedDate} 的交易
-                <span className="ml-auto text-xs bg-amber-100 text-amber-700 px-3 py-1 rounded-full font-medium">
-                  {dailyTransactions.length} 筆
+            {/* Daily List */}
+            <div className="bg-white rounded-xl md:rounded-2xl shadow-lg border border-gray-100 p-3 md:p-4">
+              <h3 className="text-sm md:text-base font-bold text-gray-800 mb-3 md:mb-4 flex items-center gap-2 flex-wrap">
+                <span>📅 {selectedDate}</span>
+                <span className="text-gray-500 font-normal">
+                  {t("transactionsOn")}
+                </span>
+                <span className="ml-auto text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                  {dailyTransactions.length} {t("records")}
                 </span>
               </h3>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {dailyTransactions.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="text-4xl mb-2">📭</div>
-                    <p className="text-gray-400 text-sm">今日尚無交易記錄</p>
+                  <div className="text-center py-6">
+                    <div className="text-3xl mb-2">📭</div>
+                    <p className="text-gray-400 text-xs md:text-sm">
+                      {t("noTransactions")}
+                    </p>
                   </div>
                 ) : (
-                  dailyTransactions.map((t) => {
-                    const config = CATEGORY_CONFIG[t.category] || {
+                  dailyTransactions.map((tx) => {
+                    const config = CATEGORY_CONFIG[tx.category] || {
                       icon: "📝",
                       color: "#6b7280",
                       bgColor: "#f3f4f6",
                     };
                     return (
                       <div
-                        key={t.id}
-                        className={`flex items-center justify-between p-3 rounded-xl group transition-all duration-300 hover:shadow-md
+                        key={tx.id}
+                        className={`flex items-center justify-between p-2 md:p-3 rounded-lg md:rounded-xl group transition-all duration-300 hover:shadow-md
                           ${
-                            highlightedId === t.id
+                            highlightedId === tx.id
                               ? "ring-2 ring-amber-400 bg-amber-50 animate-pulse"
                               : "bg-gray-50 hover:bg-white"
                           }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
                           <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+                            className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center text-base md:text-lg flex-shrink-0"
                             style={{ backgroundColor: config.bgColor }}
                           >
                             {config.icon}
                           </div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">
-                              {t.category}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs md:text-sm font-semibold text-gray-800 truncate">
+                              {getCategoryName(tx.category)}
                             </p>
-                            <p className="text-xs text-gray-400">
-                              {t.description || "無備註"}
+                            <p className="text-[10px] md:text-xs text-gray-400 truncate">
+                              {tx.description || t("noDescription")}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           <span
-                            className={`text-base font-bold ${t.type === "income" ? "text-green-500" : "text-red-500"}`}
+                            className={`text-sm md:text-base font-bold ${tx.type === "income" ? "text-green-500" : "text-red-500"}`}
                           >
-                            {t.type === "income" ? "+" : "-"}$
-                            {formatNumber(t.amount)}
+                            {tx.type === "income" ? "+" : "-"}$
+                            {formatNumber(tx.amount)}
                           </span>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
-                              onClick={() => handleEdit(t)}
+                              onClick={() => handleEdit(tx)}
                               className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-100"
                             >
                               <Edit2 size={14} />
                             </button>
                             <button
-                              onClick={() => handleDelete(t.id)}
+                              onClick={() => handleDelete(tx.id)}
                               className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100"
                             >
                               <Trash2 size={14} />
@@ -743,22 +765,24 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
         {viewMode === "report" && (
           <div className="space-y-6 printable-section">
             <div className="flex justify-between items-center no-print">
-              <h2 className="text-lg font-bold text-gray-800">📊 財務報表</h2>
+              <h2 className="text-lg font-bold text-gray-800">
+                {t("reportTitle")}
+              </h2>
               <div className="flex gap-2">
                 <button
                   onClick={handlePrint}
                   className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl text-sm font-medium hover:from-amber-500 hover:to-orange-600 transition shadow-lg"
                 >
-                  <Download size={14} /> 匯出 PDF
+                  <Download size={14} /> {t("exportPdf")}
                 </button>
               </div>
             </div>
 
             {/* Summary Cards with Donut Chart */}
-            <div className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-                <h3 className="font-bold text-gray-800 text-lg">
-                  📈 {dateLabel}
+            <div className="bg-white p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg border border-gray-100">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 md:mb-4 gap-2">
+                <h3 className="font-bold text-gray-800 text-sm md:text-lg truncate">
+                  {dateLabel}
                 </h3>
                 <div className="flex flex-wrap items-center gap-2 no-print">
                   <select
@@ -768,10 +792,10 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                       setReportRange(e.target.value as ReportRange)
                     }
                   >
-                    <option value="week">本週</option>
-                    <option value="month">本月</option>
-                    <option value="year">今年</option>
-                    <option value="custom">自訂範圍</option>
+                    <option value="week">{t("thisWeek")}</option>
+                    <option value="month">{t("thisMonth")}</option>
+                    <option value="year">{t("thisYear")}</option>
+                    <option value="custom">{t("customRange")}</option>
                   </select>
 
                   {reportRange === "custom" && (
@@ -782,7 +806,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                         onChange={(e) => setCustomStart(e.target.value)}
                         className="text-sm border-none outline-none bg-transparent"
                       />
-                      <span className="text-gray-400">至</span>
+                      <span className="text-gray-400">{t("rangeTo")}</span>
                       <input
                         type="date"
                         value={customEnd}
@@ -794,129 +818,70 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                 </div>
               </div>
 
-              {/* Main Stats Row */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-2xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 bg-green-500 rounded-xl flex items-center justify-center">
-                      <TrendingUp size={16} className="text-white" />
-                    </div>
-                    <span className="text-sm font-medium text-green-700">
-                      收入
-                    </span>
-                  </div>
-                  <p className="text-2xl font-bold text-green-600">
+              {/* Main Stats Row - Compact */}
+              <div className="flex flex-wrap gap-2 text-xs md:text-sm mb-4">
+                <div className="flex-1 min-w-[80px] bg-green-50 rounded-lg px-2 py-1.5 whitespace-nowrap">
+                  <span className="text-green-600">{t("income")} </span>
+                  <span className="font-bold text-green-700">
                     $
                     {formatNumber(
                       filteredTransactions.reduce(
-                        (acc, t) =>
-                          t.type === "income" ? acc + t.amount : acc,
+                        (acc, tx) =>
+                          tx.type === "income" ? acc + tx.amount : acc,
                         0,
                       ),
                     )}
-                  </p>
+                  </span>
                 </div>
-                <div className="bg-gradient-to-br from-red-50 to-rose-50 p-4 rounded-2xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 bg-red-500 rounded-xl flex items-center justify-center">
-                      <TrendingDown size={16} className="text-white" />
-                    </div>
-                    <span className="text-sm font-medium text-red-700">
-                      支出
-                    </span>
-                  </div>
-                  <p className="text-2xl font-bold text-red-600">
+                <div className="flex-1 min-w-[80px] bg-red-50 rounded-lg px-2 py-1.5 whitespace-nowrap">
+                  <span className="text-red-600">{t("expense")} </span>
+                  <span className="font-bold text-red-700">
                     $
                     {formatNumber(
                       filteredTransactions.reduce(
-                        (acc, t) =>
-                          t.type === "expense" ? acc + t.amount : acc,
+                        (acc, tx) =>
+                          tx.type === "expense" ? acc + tx.amount : acc,
                         0,
                       ),
                     )}
-                  </p>
+                  </span>
                 </div>
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-2xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center">
-                      <Wallet size={16} className="text-white" />
-                    </div>
-                    <span className="text-sm font-medium text-amber-700">
-                      結餘
-                    </span>
-                  </div>
-                  <p className="text-2xl font-bold text-amber-600">
+                <div className="flex-1 min-w-[80px] bg-amber-50 rounded-lg px-2 py-1.5 whitespace-nowrap">
+                  <span className="text-amber-600">{t("balance")} </span>
+                  <span className="font-bold text-amber-700">
                     $
                     {formatNumber(
                       filteredTransactions.reduce(
-                        (acc, t) =>
-                          t.type === "income" ? acc + t.amount : acc - t.amount,
+                        (acc, tx) =>
+                          tx.type === "income"
+                            ? acc + tx.amount
+                            : acc - tx.amount,
                         0,
                       ),
                     )}
-                  </p>
+                  </span>
                 </div>
-              </div>
-
-              {/* Bar Chart */}
-              <div className="h-48 w-full print-compact">
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={chartData} width={500} height={180}>
-                    <XAxis
-                      dataKey="name"
-                      fontSize={11}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      fontSize={11}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(val) => `$${formatNumber(val)}`}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: "12px",
-                        border: "none",
-                        boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-                      }}
-                    />
-                    <Legend />
-                    <Bar
-                      dataKey="income"
-                      fill="#10b981"
-                      radius={[8, 8, 0, 0]}
-                      name="收入"
-                    />
-                    <Bar
-                      dataKey="expense"
-                      fill="#ef4444"
-                      radius={[8, 8, 0, 0]}
-                      name="支出"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
               </div>
             </div>
 
             {/* Donut Chart - Modern Style */}
-            <div className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100">
-              <h3 className="font-bold text-gray-800 text-lg mb-4">
-                🍩 支出分佈
+            <div className="bg-white p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg border border-gray-100">
+              <h3 className="font-bold text-gray-800 text-sm md:text-lg mb-3 md:mb-4">
+                {t("expenseBreakdown")}
               </h3>
-              <div className="flex flex-col md:flex-row items-center gap-6">
-                {/* Donut Chart */}
-                <div className="relative w-48 h-48 print-compact">
-                  <ResponsiveContainer width="100%" height={180}>
-                    <PieChart width={180} height={180}>
+              <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+                {/* Donut Chart - Hidden in print */}
+                <div className="relative w-32 h-32 md:w-48 md:h-48 print-compact flex-shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
                       <Pie
                         data={chartData.filter((d) => d.expense > 0)}
                         dataKey="expense"
                         nameKey="name"
                         cx="50%"
                         cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
+                        innerRadius="40%"
+                        outerRadius="70%"
                         paddingAngle={3}
                       >
                         {chartData
@@ -940,8 +905,10 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                   </ResponsiveContainer>
                   {/* Center Label */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <p className="text-xs text-gray-400">總支出</p>
-                    <p className="text-lg font-bold text-gray-800">
+                    <p className="text-[10px] md:text-xs text-gray-400">
+                      {t("totalExpenseLabel")}
+                    </p>
+                    <p className="text-sm md:text-lg font-bold text-gray-800">
                       $
                       {formatNumber(
                         filteredTransactions.reduce(
@@ -954,8 +921,8 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                   </div>
                 </div>
 
-                {/* Legend */}
-                <div className="flex-1 grid grid-cols-2 gap-2">
+                {/* Legend - Full width in print */}
+                <div className="w-full md:flex-1 grid grid-cols-1 sm:grid-cols-2 gap-1.5 md:gap-2 max-h-48 md:max-h-none overflow-y-auto print-legend-full">
                   {chartData
                     .filter((d) => d.expense > 0)
                     .map((entry, index) => {
@@ -963,8 +930,8 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                         icon: "📝",
                       };
                       const totalExpense = filteredTransactions.reduce(
-                        (acc, t) =>
-                          t.type === "expense" ? acc + t.amount : acc,
+                        (acc, tx) =>
+                          tx.type === "expense" ? acc + tx.amount : acc,
                         0,
                       );
                       const percentage =
@@ -974,47 +941,135 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                       return (
                         <div
                           key={entry.name}
-                          className="flex items-center gap-2 p-2 rounded-xl bg-gray-50"
+                          className="flex items-center gap-1.5 p-1.5 md:p-2 rounded-lg md:rounded-xl bg-gray-50 text-xs"
                         >
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{
-                              backgroundColor:
-                                CHART_COLORS[index % CHART_COLORS.length],
-                            }}
-                          />
-                          <span className="text-sm">{config.icon}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-700 truncate">
-                              {entry.name}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              {percentage}%
-                            </p>
-                          </div>
-                          <p className="text-xs font-bold text-gray-600">
+                          <span className="flex-shrink-0">{config.icon}</span>
+                          <span className="font-medium text-gray-700 truncate flex-1">
+                            {getCategoryName(entry.name)}
+                          </span>
+                          <span className="text-gray-400 flex-shrink-0">
+                            {percentage}%
+                          </span>
+                          <span className="font-bold text-gray-600 flex-shrink-0">
                             ${formatNumber(entry.expense)}
-                          </p>
+                          </span>
                         </div>
                       );
                     })}
                 </div>
               </div>
             </div>
+
+            {/* Income Breakdown - Donut Chart */}
+            <div className="bg-white p-3 md:p-5 rounded-xl md:rounded-2xl shadow-lg border border-gray-100">
+              <h3 className="font-bold text-gray-800 text-sm md:text-lg mb-3 md:mb-4">
+                {t("incomeBreakdown")}
+              </h3>
+              <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+                {/* Donut Chart - Hidden in print */}
+                <div className="relative w-32 h-32 md:w-48 md:h-48 print-compact flex-shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData.filter((d) => d.income > 0)}
+                        dataKey="income"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius="40%"
+                        outerRadius="70%"
+                        paddingAngle={3}
+                      >
+                        {chartData
+                          .filter((d) => d.income > 0)
+                          .map((entry, index) => (
+                            <Cell
+                              key={`cell-income-${index}`}
+                              fill={CHART_COLORS[index % CHART_COLORS.length]}
+                            />
+                          ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number) => `$${formatNumber(value)}`}
+                        contentStyle={{
+                          borderRadius: "12px",
+                          border: "none",
+                          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center Label */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <p className="text-[10px] md:text-xs text-gray-400">
+                      {t("totalIncomeLabel")}
+                    </p>
+                    <p className="text-sm md:text-lg font-bold text-green-600">
+                      $
+                      {formatNumber(
+                        filteredTransactions.reduce(
+                          (acc, t) =>
+                            t.type === "income" ? acc + t.amount : acc,
+                          0,
+                        ),
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Legend - Full width in print */}
+                <div className="w-full md:flex-1 grid grid-cols-1 sm:grid-cols-2 gap-1.5 md:gap-2 max-h-48 md:max-h-none overflow-y-auto print-legend-full">
+                  {chartData
+                    .filter((d) => d.income > 0)
+                    .map((entry, index) => {
+                      const config = CATEGORY_CONFIG[entry.name] || {
+                        icon: "📝",
+                      };
+                      const totalIncome = filteredTransactions.reduce(
+                        (acc, tx) =>
+                          tx.type === "income" ? acc + tx.amount : acc,
+                        0,
+                      );
+                      const percentage =
+                        totalIncome > 0
+                          ? ((entry.income / totalIncome) * 100).toFixed(1)
+                          : "0";
+                      return (
+                        <div
+                          key={entry.name}
+                          className="flex items-center gap-1.5 p-1.5 md:p-2 rounded-lg md:rounded-xl bg-green-50 text-xs"
+                        >
+                          <span className="flex-shrink-0">{config.icon}</span>
+                          <span className="font-medium text-gray-700 truncate flex-1">
+                            {getCategoryName(entry.name)}
+                          </span>
+                          <span className="text-gray-400 flex-shrink-0">
+                            {percentage}%
+                          </span>
+                          <span className="font-bold text-green-600 flex-shrink-0">
+                            ${formatNumber(entry.income)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
+
             {/* Detailed Transaction List (流水帳) */}
             <div className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100">
               <h3 className="font-bold text-gray-800 text-lg mb-4">
-                📋 交易明細
+                {t("transactionList")}
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
                   <thead className="text-xs text-gray-500 uppercase bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 rounded-l-xl">日期</th>
-                      <th className="px-4 py-3">類別</th>
-                      <th className="px-4 py-3">備註</th>
+                      <th className="px-4 py-3 rounded-l-xl">{t("date")}</th>
+                      <th className="px-4 py-3">{t("category")}</th>
+                      <th className="px-4 py-3">{t("note")}</th>
                       <th className="px-4 py-3 text-right rounded-r-xl">
-                        金額
+                        {t("amount")}
                       </th>
                     </tr>
                   </thead>
@@ -1026,39 +1081,39 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
                           className="px-4 py-8 text-center text-gray-400"
                         >
                           <div className="text-4xl mb-2">📭</div>
-                          此期間無交易記錄
+                          {t("noTransactions")}
                         </td>
                       </tr>
                     ) : (
-                      filteredTransactions.map((t) => {
-                        const config = CATEGORY_CONFIG[t.category] || {
+                      filteredTransactions.map((tx) => {
+                        const config = CATEGORY_CONFIG[tx.category] || {
                           icon: "📝",
                           bgColor: "#f3f4f6",
                         };
                         return (
                           <tr
-                            key={t.id}
+                            key={tx.id}
                             className="border-b border-gray-50 hover:bg-gray-50 transition"
                           >
                             <td className="px-4 py-3 font-medium text-gray-900">
-                              {t.date}
+                              {tx.date}
                             </td>
                             <td className="px-4 py-3">
                               <span
                                 className="px-3 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1"
                                 style={{ backgroundColor: config.bgColor }}
                               >
-                                {config.icon} {t.category}
+                                {config.icon} {getCategoryName(tx.category)}
                               </span>
                             </td>
                             <td className="px-4 py-3 text-gray-500">
-                              {t.description || "-"}
+                              {tx.description || "-"}
                             </td>
                             <td
-                              className={`px-4 py-3 text-right font-bold ${t.type === "income" ? "text-green-500" : "text-red-500"}`}
+                              className={`px-4 py-3 text-right font-bold ${tx.type === "income" ? "text-green-500" : "text-red-500"}`}
                             >
-                              {t.type === "income" ? "+" : "-"}$
-                              {formatNumber(t.amount)}
+                              {tx.type === "income" ? "+" : "-"}$
+                              {formatNumber(tx.amount)}
                             </td>
                           </tr>
                         );
@@ -1071,7 +1126,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
 
             {/* Print Footer */}
             <div className="hidden print:block text-center text-xs text-gray-400 mt-8">
-              由 智能記帳本 AI 生成於 {new Date().toLocaleDateString()}
+              {t("printFooter")} - {new Date().toLocaleDateString()}
             </div>
           </div>
         )}

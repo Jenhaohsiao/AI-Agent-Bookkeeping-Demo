@@ -167,6 +167,16 @@
           position: static !important;
         }
         
+        /* Ensure all nested containers expand */
+        #root > div > div:first-child > div,
+        #root > div > div:first-child > div > div,
+        #root > div > div:first-child > div > div > div {
+          height: auto !important;
+          max-height: none !important;
+          overflow: visible !important;
+          position: static !important;
+        }
+        
         /* Allow content to flow to multiple pages */
         .printable-section {
           display: block !important;
@@ -180,24 +190,47 @@
         }
         
         .printable-section > * {
-          margin-bottom: 10px !important;
+          margin-bottom: 8px !important;
         }
         
-        /* Allow page breaks between sections but not inside */
-        .printable-section > div {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
+        /* Reduce padding in print mode */
+        .printable-section .p-3,
+        .printable-section .p-4,
+        .printable-section .p-5 {
+          padding: 8px !important;
+        }
+        
+        .printable-section .md\\:p-4,
+        .printable-section .md\\:p-5 {
+          padding: 8px !important;
+        }
+        
+        /* Compact margins in print */
+        .printable-section .mb-3,
+        .printable-section .mb-4 {
+          margin-bottom: 6px !important;
+        }
+        
+        .printable-section .gap-4,
+        .printable-section .gap-6 {
+          gap: 8px !important;
         }
 
-        /* Charts */
+        /* Charts - hide donut chart container in print, show only legend */
         .print-compact {
-          height: 150px !important;
-          min-height: 150px !important;
+          display: none !important;
+        }
+        
+        /* Make legend full width when chart is hidden */
+        .print-legend-full {
+          width: 100% !important;
+          max-height: none !important;
+          overflow: visible !important;
         }
         
         .recharts-wrapper,
         .recharts-responsive-container {
-          width: 100% !important;
+          display: none !important;
         }
 
         /* Table styling - ensure visibility */
@@ -217,10 +250,28 @@
         
         /* Ensure scrollable containers show all content */
         .overflow-y-auto,
-        .overflow-x-auto {
+        .overflow-x-auto,
+        .overflow-hidden,
+        .overflow-auto {
           overflow: visible !important;
           height: auto !important;
           max-height: none !important;
+        }
+        
+        /* Ensure flex containers don't clip content */
+        .flex-1,
+        .flex-col,
+        .h-full {
+          height: auto !important;
+          min-height: 0 !important;
+          flex: none !important;
+        }
+        
+        /* Table wrapper should show all rows */
+        .bg-white {
+          height: auto !important;
+          max-height: none !important;
+          overflow: visible !important;
         }
         
         /* Show print footer */

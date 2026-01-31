@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { LeftPanel } from "./components/LeftPanel";
 import { RightPanel } from "./components/RightPanel";
+import { LanguageProvider, useLanguage } from "./i18n";
 import {
   Lock,
   Unlock,
@@ -17,7 +18,10 @@ const MD_BREAKPOINT = 768;
 const DEFAULT_LEFT_PCT = 30; // Default Left Width % (Right is 70%)
 const HOVER_LEFT_PCT = 70; // Left Width % when hovering Left
 
-const App: React.FC = () => {
+// Inner App component that uses language context
+const AppContent: React.FC = () => {
+  const { t } = useLanguage();
+
   // State
   const [leftWidth, setLeftWidth] = useState(HOVER_LEFT_PCT); // Start with Left panel larger
   const [isLocked, setIsLocked] = useState(true);
@@ -86,19 +90,9 @@ const App: React.FC = () => {
   const currentLeftWidth = getActiveLeftWidth();
 
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 p-4 md:p-8">
-      {/* MacOS Window Frame */}
-      <div className="relative w-full h-full max-w-7xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-300/50">
-        {/* Fake Window Controls (Traffic Lights) */}
-        <div className="h-8 bg-gray-100 border-b border-gray-200 flex items-center px-4 space-x-2 shrink-0 z-20 print:hidden">
-          <div className="w-3 h-3 rounded-full bg-red-400"></div>
-          <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-          <div className="w-3 h-3 rounded-full bg-green-400"></div>
-          <div className="ml-4 text-xs font-medium text-gray-500">
-            My Ledger Agent
-          </div>
-        </div>
-
+    <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-gray-100 to-gray-200">
+      {/* Main Container */}
+      <div className="relative w-full h-full bg-white overflow-hidden flex flex-col">
         {/* Mobile Tab Switcher */}
         {isMobile && (
           <div className="flex bg-gray-100 border-b border-gray-200 print:hidden">
@@ -110,7 +104,7 @@ const App: React.FC = () => {
                   : "text-gray-500 hover:bg-gray-50"
               }`}
             >
-              📊 記帳本
+              {t("mobileTabLedger")}
             </button>
             <button
               onClick={() => setMobileView("right")}
@@ -120,7 +114,7 @@ const App: React.FC = () => {
                   : "text-gray-500 hover:bg-gray-50"
               }`}
             >
-              🤖 AI 助理
+              {t("mobileTabAI")}
             </button>
           </div>
         )}
@@ -128,21 +122,17 @@ const App: React.FC = () => {
         {/* Content Area */}
         <div
           ref={containerRef}
-          className="flex-1 flex relative overflow-hidden"
+          className="flex-1 flex relative overflow-hidden gap-1 md:gap-2 bg-gray-200 p-1 md:p-2"
         >
           {/* LEFT PANEL */}
           <div
             className={`h-full transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] overflow-hidden relative print:!w-full ${
-              isMobile 
-                ? mobileView === "left" ? "w-full" : "w-0"
-                : ""
+              isMobile ? (mobileView === "left" ? "w-full" : "w-0") : ""
             }`}
             style={!isMobile ? { width: `${currentLeftWidth}%` } : undefined}
             onMouseEnter={handleMouseEnterLeft}
           >
-            <div className="w-full h-full min-w-[320px]">
-              {" "}
-              {/* Min width ensures content doesn't squash too much */}
+            <div className="w-full h-full min-w-[320px] bg-white rounded-xl md:rounded-2xl overflow-hidden shadow-sm">
               <LeftPanel className="h-full" />
             </div>
           </div>
@@ -158,7 +148,7 @@ const App: React.FC = () => {
               }}
             >
               {/* Floating Control Pill */}
-              <div className="bg-white/90 backdrop-blur shadow-lg border border-gray-200 rounded-full py-2 px-1 flex flex-col gap-2 transform -translate-x-1/2">
+              <div className="bg-white/90 backdrop-blur shadow-lg border border-gray-200 rounded-full py-2 px-1 flex flex-col gap-2">
                 <button
                   onClick={toggleLock}
                   className={`p-1.5 rounded-full hover:bg-gray-100 transition ${isLocked ? "text-red-500" : "text-gray-400"}`}
@@ -215,21 +205,30 @@ const App: React.FC = () => {
 
           {/* RIGHT PANEL */}
           <div
-            className={`h-full transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] overflow-hidden bg-white relative print:hidden ${
-              isMobile 
-                ? mobileView === "right" ? "w-full" : "w-0"
-                : ""
+            className={`h-full transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] overflow-hidden relative print:hidden ${
+              isMobile ? (mobileView === "right" ? "w-full" : "w-0") : ""
             }`}
-            style={!isMobile ? { width: `${100 - currentLeftWidth}%` } : undefined}
+            style={
+              !isMobile ? { width: `${100 - currentLeftWidth}%` } : undefined
+            }
             onMouseEnter={handleMouseEnterRight}
           >
-            <div className="w-full h-full min-w-[320px]">
+            <div className="w-full h-full min-w-[320px] bg-white rounded-xl md:rounded-2xl overflow-hidden shadow-sm">
               <RightPanel className="h-full" />
             </div>
           </div>
         </div>
       </div>
     </div>
+  );
+};
+
+// Main App with LanguageProvider wrapper
+const App: React.FC = () => {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 };
 

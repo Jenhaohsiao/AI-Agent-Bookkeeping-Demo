@@ -161,11 +161,6 @@ export const translations = {
     'zh-TW': '總支出',
     'zh-CN': '总支出',
   },
-  incomeBreakdown: {
-    'en': 'Income Breakdown',
-    'zh-TW': '收入分析',
-    'zh-CN': '收入分析',
-  },
   trend: {
     'en': 'Monthly Trend',
     'zh-TW': '月度趨勢',

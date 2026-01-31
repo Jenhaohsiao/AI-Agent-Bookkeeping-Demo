@@ -24,15 +24,15 @@ export const CATEGORIES = {
   expense: ['Food', 'Transport', 'Shopping', 'Entertainment', 'Health', 'Utilities', 'Rent', 'Education', 'Travel', 'Other'],
 };
 
-// 類別圖標和顏色配置
+// Category icons and color configuration
 export const CATEGORY_CONFIG: Record<string, { icon: string; color: string; bgColor: string }> = {
-  // 收入類別
+  // Income categories
   Salary: { icon: '💰', color: '#10b981', bgColor: '#d1fae5' },
   Investment: { icon: '📈', color: '#3b82f6', bgColor: '#dbeafe' },
   Bonus: { icon: '🎁', color: '#8b5cf6', bgColor: '#ede9fe' },
   Freelance: { icon: '💻', color: '#06b6d4', bgColor: '#cffafe' },
   Gift: { icon: '🎀', color: '#ec4899', bgColor: '#fce7f3' },
-  // 支出類別
+  // Expense categories
   Food: { icon: '🍽️', color: '#f97316', bgColor: '#ffedd5' },
   Transport: { icon: '🚗', color: '#3b82f6', bgColor: '#dbeafe' },
   Shopping: { icon: '🛍️', color: '#ec4899', bgColor: '#fce7f3' },

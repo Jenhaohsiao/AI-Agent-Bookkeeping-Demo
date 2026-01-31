@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { LeftPanel } from "./components/LeftPanel";
 import { RightPanel } from "./components/RightPanel";
+import { Calculator } from "./components/Calculator";
 import { LanguageProvider, useLanguage } from "./i18n";
 import {
   Lock,
@@ -9,6 +10,7 @@ import {
   ArrowRightToLine,
   ChevronLeft,
   ChevronRight,
+  Calculator as CalcIcon,
 } from "lucide-react";
 
 // Breakpoint for responsive layout (md = 768px)
@@ -28,6 +30,7 @@ const AppContent: React.FC = () => {
   const [maximized, setMaximized] = useState<"left" | "right" | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileView, setMobileView] = useState<"left" | "right">("left"); // Which panel to show on mobile
+  const [showCalculator, setShowCalculator] = useState(false);
 
   // Refs for hover detection
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,6 +44,29 @@ const AppContent: React.FC = () => {
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Listen for AI calculator control events
+  useEffect(() => {
+    const handleCalculatorControl = (e: CustomEvent) => {
+      const { action } = e.detail;
+      if (action === "open") {
+        setShowCalculator(true);
+      } else if (action === "close") {
+        setShowCalculator(false);
+      }
+    };
+
+    window.addEventListener(
+      "ai-control-calculator",
+      handleCalculatorControl as EventListener,
+    );
+    return () => {
+      window.removeEventListener(
+        "ai-control-calculator",
+        handleCalculatorControl as EventListener,
+      );
+    };
   }, []);
 
   // -- Handlers --
@@ -218,6 +244,24 @@ const AppContent: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Calculator Button - Fixed at bottom center */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 print:hidden">
+          <button
+            onClick={() => setShowCalculator(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full shadow-lg hover:from-amber-500 hover:to-orange-600 hover:scale-105 transition-all font-medium text-sm"
+            title="Open Calculator"
+          >
+            <CalcIcon size={18} />
+            <span className="hidden sm:inline">Calculator</span>
+          </button>
+        </div>
+
+        {/* Calculator Component */}
+        <Calculator
+          isOpen={showCalculator}
+          onClose={() => setShowCalculator(false)}
+        />
       </div>
     </div>
   );

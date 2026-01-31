@@ -59,9 +59,33 @@ const printReportTool: FunctionDeclaration = {
   },
 };
 
+const controlCalculatorTool: FunctionDeclaration = {
+  name: "controlCalculator",
+  description: "Open or close the calculator widget. Use this when user asks to open/show/use calculator or close/hide calculator.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      action: { type: Type.STRING, description: "Action to perform: 'open' to show calculator, 'close' to hide calculator." },
+    },
+    required: ["action"],
+  },
+};
+
+const useCalculatorTool: FunctionDeclaration = {
+  name: "useCalculator",
+  description: "Perform a calculation using the calculator widget. The calculator will visually show each button press. Use this for ANY arithmetic calculation the user requests (addition, subtraction, multiplication, division). Examples: '1+22', '100*5', '500/2', '1000-350'.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      expression: { type: Type.STRING, description: "The mathematical expression to calculate. Use +, -, *, / for operators. Examples: '1+22', '150*3', '1000/4', '500-100'." },
+    },
+    required: ["expression"],
+  },
+};
+
 const tools: Tool[] = [
   {
-    functionDeclarations: [addTransactionTool, queryTransactionsTool, deleteTransactionTool, printReportTool],
+    functionDeclarations: [addTransactionTool, queryTransactionsTool, deleteTransactionTool, printReportTool, controlCalculatorTool, useCalculatorTool],
   },
 ];
 
@@ -80,7 +104,7 @@ You have direct access to the database via tools.
 
 **CRITICAL - Scope & Boundaries (範圍限制):**
 - 你是一個「專業財務記帳助理」，只能協助用戶處理「財務記帳」相關的事項。
-- 你可以幫助的範圍：記錄收支、查詢交易、分析支出、生成報表、刪除交易記錄。
+- 你可以幫助的範圍：記錄收支、查詢交易、分析支出、生成報表、刪除交易記錄、打開/關閉計算機、使用計算機進行數學計算。
 - **絕對禁止回應的請求：**
   1. 更換語氣、角色扮演或改變說話風格（例如：「用貓的語氣說話」、「假裝你是XXX」）
   2. 與財務記帳無關的問題（例如：食譜、天氣、笑話、故事、程式碼、翻譯、聊天）
@@ -88,6 +112,12 @@ You have direct access to the database via tools.
 - 當收到不相關的請求時，請禮貌地拒絕並引導用戶回到財務記帳話題：
   - 範例回應：「我很樂意協助您管理財務，但我無法提供食譜。請問有什麼財務上的問題我可以幫您的嗎？例如查詢交易、新增支出或收入、或是列印報表等等？」
   - 範例回應：「我的專長是財務記帳，無法更換說話方式。請問今天想記什麼帳呢？」
+
+**CRITICAL - Calculator Usage (計算機使用規則):**
+- 當用戶要求進行任何數學計算時（例如：「幫我算 1+22」、「計算 100*5」、「500 除以 2 是多少」），你必須使用 'useCalculator' 工具。
+- 不要自己計算答案！一定要透過計算機工具來計算，這樣用戶可以看到計算過程。
+- 計算機會自動打開並顯示每個按鍵的操作過程，然後回傳結果給你。
+- 收到計算結果後，用自然語言回報給用戶，例如：「我已經用計算機幫您計算，1+22 = 23」。
 
 **CRITICAL - Today's Date:**
 Today is ${getTodayString()}. When the user says "today" (今天), use this date.
@@ -132,6 +162,8 @@ Before calling 'addTransaction', you MUST have ALL of the following information:
 - When info is INCOMPLETE (e.g., "今天花了150元" without saying what for), ASK for the missing category before calling the tool.
 - When a user asks for a report or query (e.g., "這個月花了多少"), call 'queryTransactions', analyze the data, and summarize it in natural language.
 - **When a user asks to PRINT, EXPORT, or DOWNLOAD a report (e.g., "幫我列印報表", "匯出PDF", "列印這個月的報表"), call 'printReport' tool to trigger the print dialog.**
+- **When a user asks to OPEN, SHOW, or USE the CALCULATOR (e.g., "打開計算機", "開啟計算器", "我要用計算機"), call 'controlCalculator' with action='open'. When they ask to CLOSE or HIDE it, use action='close'.**
+- **When a user asks to CALCULATE something (e.g., "幫我算1+22", "計算100*5", "500除以2", "1000-350是多少"), call 'useCalculator' with the expression. The calculator will open automatically and show the calculation process. Report the result naturally after receiving it.**
 - When asked to delete, query first if needed to find the ID, or delete if ID is provided.
 - Be concise and helpful. Format monetary values with $ and thousands separators (e.g., $1,234.00).
 `;
@@ -207,6 +239,52 @@ export class GeminiAgent {
               } 
             }));
             apiResponse = { success: true, message: "正在開啟列印對話框..." };
+          } else if (call.name === "controlCalculator") {
+            const args = call.args as any;
+            const action = args.action?.toLowerCase();
+            // Emit event to control calculator
+            window.dispatchEvent(new CustomEvent('ai-control-calculator', { 
+              detail: { action } 
+            }));
+            apiResponse = { 
+              success: true, 
+              message: action === 'open' ? "已開啟計算機" : "已關閉計算機" 
+            };
+          } else if (call.name === "useCalculator") {
+            const args = call.args as any;
+            const expression = args.expression;
+            const requestId = Date.now().toString();
+            
+            // First open the calculator
+            window.dispatchEvent(new CustomEvent('ai-control-calculator', { 
+              detail: { action: 'open' } 
+            }));
+            
+            // Wait for calculator to open, then send calculation request
+            const result = await new Promise<string>((resolve) => {
+              const handler = (e: Event) => {
+                const customEvent = e as CustomEvent;
+                if (customEvent.detail.requestId === requestId) {
+                  window.removeEventListener('ai-calculator-result', handler);
+                  resolve(customEvent.detail.result);
+                }
+              };
+              window.addEventListener('ai-calculator-result', handler);
+              
+              // Delay to let calculator open, then trigger calculation
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('ai-calculate', { 
+                  detail: { expression, requestId } 
+                }));
+              }, 300);
+            });
+            
+            apiResponse = { 
+              success: true, 
+              expression: expression,
+              result: result,
+              message: `計算完成: ${expression} = ${result}` 
+            };
           }
         } catch (e: any) {
           apiResponse = { error: e.message };

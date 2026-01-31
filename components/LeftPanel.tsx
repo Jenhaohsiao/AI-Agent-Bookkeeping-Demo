@@ -46,7 +46,7 @@ import {
 import { CATEGORIES, CATEGORY_CONFIG } from "../constants";
 import { useLanguage } from "../i18n";
 
-// 千分位格式化函數
+// Format number with thousands separators
 const formatNumber = (num: number): string => {
   return num.toLocaleString("en-US", {
     minimumFractionDigits: 2,
@@ -54,7 +54,7 @@ const formatNumber = (num: number): string => {
   });
 };
 
-// 圖表顏色
+// Chart colors
 const CHART_COLORS = [
   "#f97316",
   "#3b82f6",
@@ -133,6 +133,13 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({ className }) => {
     };
 
     const handleAiPrint = (e: CustomEvent) => {
+      const { dateStart, dateEnd } = e.detail;
+      // Set custom date range from AI parameters
+      if (dateStart && dateEnd) {
+        setReportRange("custom");
+        setCustomStart(dateStart);
+        setCustomEnd(dateEnd);
+      }
       // Switch to report view and trigger print after a short delay
       setViewMode("report");
       setTimeout(() => {

@@ -1,72 +1,82 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# AI Agent Bookkeeping Demo
 
-# Gemini Ledger Agent - AI-Powered Bookkeeping
+A modern bookkeeping web application with AI assistant powered by Google Gemini. Features a responsive split-panel UI with calendar-based transaction management and natural language interaction.
 
-A calendar-based bookkeeping application with AI assistant powered by Google Gemini.
+## Tech Stack
+
+- React 19 + TypeScript + Vite
+- Google Gemini API (gemini-2.5-flash) with Function Calling
+- Web Speech API for voice input
+- Supabase (PostgreSQL) / localStorage fallback
+- Tailwind CSS, Recharts, date-fns
 
 ## Features
 
-- 📅 Calendar-based transaction entry
-- 🤖 AI Assistant for natural language bookkeeping
-- 📊 Reports with charts (Year/Month/Week/Custom)
-- 💾 Supabase (PostgreSQL) database support
-- 🔄 Daily demo data reset (for demo purposes)
+- Calendar-based transaction entry with income/expense indicators
+- AI assistant for natural language bookkeeping (add, query, delete transactions)
+- Voice input with Simplified-to-Traditional Chinese conversion
+- Multi-language support (English, Traditional Chinese, Simplified Chinese)
+- Financial reports with pie charts and transaction lists
+- PDF export functionality
+- Responsive design for desktop and mobile
+- Daily demo data auto-reset for showcase purposes
 
-## Run Locally
+## Quick Start
 
-**Prerequisites:** Node.js 18+
+Prerequisites: Node.js 18+
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+cp .env.example .env.local
+# Edit .env.local with your API keys
+npm run dev
+```
 
-2. Configure environment variables in `.env.local`:
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
-   VITE_SUPABASE_URL=your_supabase_project_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
+Environment variables:
+- `VITE_GEMINI_API_KEY` - Google Gemini API key (required)
+- `VITE_SUPABASE_URL` - Supabase project URL (optional)
+- `VITE_SUPABASE_ANON_KEY` - Supabase anon key (optional)
 
-3. Run the app:
-   ```bash
-   npm run dev
-   ```
+Without Supabase credentials, the app uses localStorage as fallback.
 
-## Database Setup (Supabase)
+## Database Setup (Optional)
 
-### Option 1: Use Supabase (Recommended for Production)
+1. Create a project at supabase.com
+2. Run `supabase-schema.sql` in SQL Editor
+3. Add credentials to `.env.local`
 
-1. Create a free account at [supabase.com](https://supabase.com)
-2. Create a new project
-3. Go to SQL Editor and run the contents of `supabase-schema.sql`
-4. Get your Project URL and Anon Key from Settings > API
-5. Add them to your `.env.local` file
+## Project Structure
 
-### Option 2: Use localStorage (Development Only)
+```
+App.tsx              - Main layout with split-panel UI
+components/
+  LeftPanel.tsx      - Calendar, forms, reports
+  RightPanel.tsx     - AI chat interface
+services/
+  geminiService.ts   - AI agent with function calling
+  dbService.ts       - Database operations
+  supabaseClient.ts  - Supabase connection
+i18n/                - Multi-language translations
+```
 
-If you don't configure Supabase credentials, the app will automatically fall back to localStorage. This is fine for local development but data will be lost when clearing browser data.
+## AI Capabilities
 
-## Daily Demo Data Reset
+The AI assistant can:
+- Add transactions: "Spent $50 on lunch today"
+- Query records: "How much did I spend this month?"
+- Delete entries: "Delete the lunch expense from yesterday"
+- Generate reports: "Print this month's report"
 
-The app includes a feature that:
-- Automatically resets the database once per day
-- Fills it with realistic demo transactions for the last 3 months
-- Useful for demo/showcase purposes
+The AI is scoped to financial tasks only and will politely decline unrelated requests.
 
-This runs automatically on first load each day. To manually trigger a reset, you can call `db.forceReset()` from the browser console.
+## Deployment
 
-## Deploy to Cloud (Free Options)
+Build: `npm run build`
 
-### Frontend Hosting:
-- **Vercel** - `npm run build` then deploy
-- **Netlify** - Connect your GitHub repo
-- **Cloudflare Pages** - Fast edge deployment
+Recommended platforms:
+- Vercel, Netlify, or Cloudflare Pages for frontend
+- Supabase free tier for database (500MB storage)
 
-### Database (Supabase Free Tier):
-- 500MB database storage
-- Unlimited API requests
-- Up to 2 projects free
+## License
 
+MIT

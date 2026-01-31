@@ -10,10 +10,10 @@ import {
   Language,
 } from "../i18n";
 
-// 建立簡體轉繁體轉換器
+// Create Simplified to Traditional Chinese converter
 const converter = OpenCC.Converter({ from: "cn", to: "tw" });
 
-// 語言選擇下拉組件
+// Language selector dropdown component
 const LanguageSelector: React.FC = () => {
   const { language, setLanguage, setIsManuallySet, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
@@ -143,24 +143,24 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  // 處理語音辨識結果 - 根據當前語言設定自動轉換
+  // Handle speech recognition result - auto-convert based on current language setting
   const handleSpeechResult = (transcript: string) => {
     if (containsChinese(transcript)) {
-      // 如果已選擇繁體中文，自動轉換
+      // If Traditional Chinese is selected, auto-convert
       if (language === "zh-TW") {
         setInput(converter(transcript));
       } else if (language === "zh-CN") {
-        // 簡體中文，保持原樣
+        // Simplified Chinese, keep as-is
         setInput(transcript);
       } else {
-        // 英文模式下輸入中文，轉換為繁體並切換語言
+        // English mode with Chinese input, convert to Traditional and switch language
         setInput(converter(transcript));
         if (!isManuallySet) {
           setLanguage("zh-TW");
         }
       }
     } else {
-      // 非中文，直接使用
+      // Non-Chinese, use directly
       setInput(transcript);
     }
   };
@@ -181,12 +181,12 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
           .map((result) => result[0].transcript)
           .join("");
 
-        // 如果是最終結果，處理語言轉換
+        // If final result, process language conversion
         const isFinal = event.results[event.results.length - 1]?.isFinal;
         if (isFinal) {
           handleSpeechResult(transcript);
         } else {
-          // 中間結果，根據語言設定即時轉換顯示
+          // Interim result, convert display based on language setting
           if (language === "zh-TW" && containsChinese(transcript)) {
             setInput(converter(transcript));
           } else {
@@ -373,7 +373,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
                   ? "bg-gradient-to-r from-red-500 to-rose-500 text-white animate-pulse shadow-lg shadow-red-200"
                   : "bg-gray-100 text-gray-500 hover:bg-amber-100 hover:text-amber-600"
               } disabled:opacity-50 disabled:cursor-not-allowed`}
-              title={isListening ? "停止錄音" : "語音輸入"}
+              title={isListening ? "Stop recording" : "Voice input"}
             >
               {isListening ? <MicOff size={18} /> : <Mic size={18} />}
             </button>

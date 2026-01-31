@@ -334,7 +334,11 @@ export const Calculator: React.FC<CalculatorProps> = ({ isOpen, onClose }) => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't interfere if user is typing in an input field
       const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
         return;
       }
 
@@ -350,93 +354,104 @@ export const Calculator: React.FC<CalculatorProps> = ({ isOpen, onClose }) => {
       }
 
       // Operators
-      if (key === '+') {
+      if (key === "+") {
         e.preventDefault();
-        setActiveButton('+');
-        performOperation('+');
+        setActiveButton("+");
+        performOperation("+");
         setTimeout(() => setActiveButton(null), 100);
         return;
       }
-      if (key === '-') {
+      if (key === "-") {
         e.preventDefault();
-        setActiveButton('-');
-        performOperation('-');
+        setActiveButton("-");
+        performOperation("-");
         setTimeout(() => setActiveButton(null), 100);
         return;
       }
-      if (key === '*') {
+      if (key === "*") {
         e.preventDefault();
-        setActiveButton('×');
-        performOperation('×');
+        setActiveButton("×");
+        performOperation("×");
         setTimeout(() => setActiveButton(null), 100);
         return;
       }
-      if (key === '/') {
+      if (key === "/") {
         e.preventDefault();
-        setActiveButton('÷');
-        performOperation('÷');
+        setActiveButton("÷");
+        performOperation("÷");
         setTimeout(() => setActiveButton(null), 100);
         return;
       }
 
       // Decimal point
-      if (key === '.' || key === ',') {
+      if (key === "." || key === ",") {
         e.preventDefault();
-        setActiveButton('.');
+        setActiveButton(".");
         inputDecimal();
         setTimeout(() => setActiveButton(null), 100);
         return;
       }
 
       // Enter or = for calculate
-      if (key === 'Enter' || key === '=') {
+      if (key === "Enter" || key === "=") {
         e.preventDefault();
-        setActiveButton('=');
+        setActiveButton("=");
         calculate();
         setTimeout(() => setActiveButton(null), 100);
         return;
       }
 
       // Escape to close
-      if (key === 'Escape') {
+      if (key === "Escape") {
         e.preventDefault();
         onClose();
         return;
       }
 
       // Backspace for clear entry
-      if (key === 'Backspace') {
+      if (key === "Backspace") {
         e.preventDefault();
-        setActiveButton('CE');
+        setActiveButton("CE");
         clearEntry();
         setTimeout(() => setActiveButton(null), 100);
         return;
       }
 
       // Delete for clear all
-      if (key === 'Delete') {
+      if (key === "Delete") {
         e.preventDefault();
-        setActiveButton('C');
+        setActiveButton("C");
         clearAll();
         setTimeout(() => setActiveButton(null), 100);
         return;
       }
 
       // Percent
-      if (key === '%') {
+      if (key === "%") {
         e.preventDefault();
-        setActiveButton('%');
+        setActiveButton("%");
         inputPercent();
         setTimeout(() => setActiveButton(null), 100);
         return;
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, isAiControlled, inputDigit, inputDecimal, performOperation, calculate, clearEntry, clearAll, inputPercent, onClose]);
+  }, [
+    isOpen,
+    isAiControlled,
+    inputDigit,
+    inputDecimal,
+    performOperation,
+    calculate,
+    clearEntry,
+    clearAll,
+    inputPercent,
+    onClose,
+  ]);
 
   // Listen for AI calculation requests
   useEffect(() => {

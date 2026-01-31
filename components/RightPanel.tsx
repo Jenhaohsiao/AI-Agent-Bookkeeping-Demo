@@ -265,18 +265,19 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
       setMessages((prev) => [...prev, aiMsg]);
     } catch (error: any) {
       console.error(error);
-      
+
       // Check if it's an API key error
-      if (error?.isApiKeyError || error?.message === 'API_KEY_INVALID') {
+      if (error?.isApiKeyError || error?.message === "API_KEY_INVALID") {
         setShowApiKeyDialog(true);
         const errorMsg: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: "model",
-          content: language === 'en' 
-            ? "The API key is invalid or has exceeded its quota. Please provide your own API key or try again later."
-            : language === 'zh-CN'
-            ? "API Key 无效或已超出使用额度。请提供您自己的 API Key，或稍后再试。"
-            : "API Key 無效或已超出使用額度。請提供您自己的 API Key，或稍後再試。",
+          content:
+            language === "en"
+              ? "The API key is invalid or has exceeded its quota. Please provide your own API key or try again later."
+              : language === "zh-CN"
+                ? "API Key 无效或已超出使用额度。请提供您自己的 API Key，或稍后再试。"
+                : "API Key 無效或已超出使用額度。請提供您自己的 API Key，或稍後再試。",
         };
         setMessages((prev) => [...prev, errorMsg]);
       } else {
@@ -297,16 +298,17 @@ export const RightPanel: React.FC<RightPanelProps> = ({ className }) => {
   const handleApiKeySubmit = (apiKey: string) => {
     setCustomApiKey(apiKey);
     setShowApiKeyDialog(false);
-    
+
     // Add confirmation message
     const confirmMsg: ChatMessage = {
       id: Date.now().toString(),
       role: "model",
-      content: language === 'en'
-        ? "Your API key has been set. You can now continue using the AI assistant. Your key is stored only in this browser session and will be cleared when you close the tab."
-        : language === 'zh-CN'
-        ? "您的 API Key 已设置成功。现在可以继续使用 AI 助手。您的 Key 仅储存于此浏览器会话中，关闭分页后将自动清除。"
-        : "您的 API Key 已設置成功。現在可以繼續使用 AI 助手。您的 Key 僅儲存於此瀏覽器會話中，關閉分頁後將自動清除。",
+      content:
+        language === "en"
+          ? "Your API key has been set. You can now continue using the AI assistant. Your key is stored only in this browser session and will be cleared when you close the tab."
+          : language === "zh-CN"
+            ? "您的 API Key 已设置成功。现在可以继续使用 AI 助手。您的 Key 仅储存于此浏览器会话中，关闭分页后将自动清除。"
+            : "您的 API Key 已設置成功。現在可以繼續使用 AI 助手。您的 Key 僅儲存於此瀏覽器會話中，關閉分頁後將自動清除。",
     };
     setMessages((prev) => [...prev, confirmMsg]);
   };

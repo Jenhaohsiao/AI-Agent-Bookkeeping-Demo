@@ -25,8 +25,10 @@ export const ApiKeyDialog: React.FC<ApiKeyDialogProps> = ({
     },
     description: {
       en: "The default API key is unavailable (expired, quota exceeded, or invalid). You have two options:",
-      "zh-TW": "預設的 API Key 目前無法使用（可能已過期、額度用盡或失效）。您有兩個選擇：",
-      "zh-CN": "默认的 API Key 目前无法使用（可能已过期、额度用尽或失效）。您有两个选择：",
+      "zh-TW":
+        "預設的 API Key 目前無法使用（可能已過期、額度用盡或失效）。您有兩個選擇：",
+      "zh-CN":
+        "默认的 API Key 目前无法使用（可能已过期、额度用尽或失效）。您有两个选择：",
     },
     option1Title: {
       en: "Option 1: Wait",
@@ -60,8 +62,10 @@ export const ApiKeyDialog: React.FC<ApiKeyDialogProps> = ({
     },
     privacyNotice: {
       en: "Your API key is stored only in your browser's session storage. It will be cleared when you close the tab. We do not collect or store your key on any server.",
-      "zh-TW": "您的 API Key 僅儲存於瀏覽器的 Session Storage 中，關閉分頁後即自動清除。我們不會在任何伺服器上收集或儲存您的 Key。",
-      "zh-CN": "您的 API Key 仅储存于浏览器的 Session Storage 中，关闭分页后即自动清除。我们不会在任何服务器上收集或储存您的 Key。",
+      "zh-TW":
+        "您的 API Key 僅儲存於瀏覽器的 Session Storage 中，關閉分頁後即自動清除。我們不會在任何伺服器上收集或儲存您的 Key。",
+      "zh-CN":
+        "您的 API Key 仅储存于浏览器的 Session Storage 中，关闭分页后即自动清除。我们不会在任何服务器上收集或储存您的 Key。",
     },
     submit: {
       en: "Use This Key",
@@ -76,7 +80,9 @@ export const ApiKeyDialog: React.FC<ApiKeyDialogProps> = ({
   };
 
   const getText = (key: keyof typeof texts) => {
-    return texts[key][language as keyof (typeof texts)[typeof key]] || texts[key].en;
+    return (
+      texts[key][language as keyof (typeof texts)[typeof key]] || texts[key].en
+    );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -170,7 +176,10 @@ export const ApiKeyDialog: React.FC<ApiKeyDialogProps> = ({
 
           {/* Privacy Notice */}
           <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
-            <ShieldCheck size={18} className="text-gray-500 mt-0.5 flex-shrink-0" />
+            <ShieldCheck
+              size={18}
+              className="text-gray-500 mt-0.5 flex-shrink-0"
+            />
             <p className="text-xs text-gray-500 leading-relaxed">
               {getText("privacyNotice")}
             </p>

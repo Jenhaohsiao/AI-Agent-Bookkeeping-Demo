@@ -45,9 +45,23 @@ const deleteTransactionTool: FunctionDeclaration = {
   },
 };
 
+const printReportTool: FunctionDeclaration = {
+  name: "printReport",
+  description: "Print/Export financial report as PDF. Use this when user asks to print, export, or download a report.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      reportType: { type: Type.STRING, description: "Type of report: 'monthly' or 'custom'." },
+      dateStart: { type: Type.STRING, description: "Start date (YYYY-MM-DD) for the report period." },
+      dateEnd: { type: Type.STRING, description: "End date (YYYY-MM-DD) for the report period." },
+    },
+    required: ["reportType", "dateStart", "dateEnd"],
+  },
+};
+
 const tools: Tool[] = [
   {
-    functionDeclarations: [addTransactionTool, queryTransactionsTool, deleteTransactionTool],
+    functionDeclarations: [addTransactionTool, queryTransactionsTool, deleteTransactionTool, printReportTool],
   },
 ];
 
@@ -69,10 +83,21 @@ Today is ${getTodayString()}. When the user says "today" (今天), use this date
 When the user says "yesterday" (昨天), use the day before this date.
 When the user says "this month" (這個月), it refers to ${getTodayString().substring(0, 7)}.
 
-**Language Rules:**
-- If the user writes in Chinese (either Traditional or Simplified), ALWAYS respond in Traditional Chinese (繁體中文).
+**Language Rules (語言規則):**
+- 當用戶使用中文（無論是繁體中文還是簡體中文，包括打字或語音輸入），一律使用「繁體中文」回應。
 - If the user writes in English, respond in English.
-- When in doubt about the language, default to Traditional Chinese.
+- 若無法判斷用戶使用的語言，預設使用繁體中文回應。
+- 所有中文回應必須使用台灣常用的繁體中文用語和標點符號（如：「」、，。）。
+
+**CRITICAL - Response Format Rules (回應格式規則):**
+- 當你呼叫工具後得到結果，請用「自然語言」簡潔地總結給用戶。
+- **絕對不要**在回覆中顯示原始 JSON 數據、程式碼或技術資訊。
+- 用戶看不懂 JSON，他們只需要知道結果的意義。
+- 範例：
+  - ❌ 錯誤：{"output": [{"amount": 150, "category": "Food"...}]}
+  - ✅ 正確：這個月您在餐飲上花了 $500，交通 $200，總計 $700。
+  - ❌ 錯誤：queryTransactions_response: ...
+  - ✅ 正確：您這個月的收入為 $28,000，支出為 $13,000，結餘 $15,000。
 
 **CRITICAL - Validation Rules (MUST FOLLOW):**
 Before calling 'addTransaction', you MUST have ALL of the following information:
@@ -94,10 +119,10 @@ Before calling 'addTransaction', you MUST have ALL of the following information:
 **Functional Rules:**
 - When a user asks to record something with complete info (e.g., "今天午餐花了150元"), call 'addTransaction'.
 - When info is INCOMPLETE (e.g., "今天花了150元" without saying what for), ASK for the missing category before calling the tool.
-- When a user asks for a report or query, call 'queryTransactions', analyze the data, and summarize it.
+- When a user asks for a report or query (e.g., "這個月花了多少"), call 'queryTransactions', analyze the data, and summarize it in natural language.
+- **When a user asks to PRINT, EXPORT, or DOWNLOAD a report (e.g., "幫我列印報表", "匯出PDF", "列印這個月的報表"), call 'printReport' tool to trigger the print dialog.**
 - When asked to delete, query first if needed to find the ID, or delete if ID is provided.
-- Be concise and helpful. Format monetary values clearly.
-- Use $ for currency display unless the user specifies otherwise.
+- Be concise and helpful. Format monetary values with $ and thousands separators (e.g., $1,234.00).
 `;
 
 export class GeminiAgent {
@@ -113,7 +138,7 @@ export class GeminiAgent {
 
   async startChat() {
     this.chatSession = this.ai.chats.create({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
       config: {
         systemInstruction: systemInstruction,
         tools: tools,
@@ -129,7 +154,7 @@ export class GeminiAgent {
     
     // 2. Loop to handle function calls
     while (result.functionCalls && result.functionCalls.length > 0) {
-      const parts: any[] = [];
+      const functionResponses: any[] = [];
 
       for (const call of result.functionCalls) {
         console.log("Tool Call:", call.name, call.args);
@@ -160,23 +185,35 @@ export class GeminiAgent {
                 detail: { id: args.id, type: 'delete' } 
               }));
             }
+          } else if (call.name === "printReport") {
+            const args = call.args as any;
+            // Emit event to trigger print - UI will switch to report view and print
+            window.dispatchEvent(new CustomEvent('ai-print-report', { 
+              detail: { 
+                reportType: args.reportType,
+                dateStart: args.dateStart, 
+                dateEnd: args.dateEnd 
+              } 
+            }));
+            apiResponse = { success: true, message: "正在開啟列印對話框..." };
           }
         } catch (e: any) {
           apiResponse = { error: e.message };
         }
 
-        // Build function response part
-        parts.push({
+        // Build function response part - response should contain output key
+        functionResponses.push({
           functionResponse: {
-            id: call.id,
             name: call.name,
-            response: apiResponse,
+            response: { output: apiResponse },
           }
         });
       }
 
       // 3. Send function responses back to model
-      result = await this.chatSession.sendMessage({ message: parts });
+      result = await this.chatSession.sendMessage({
+        message: functionResponses[0]
+      });
     }
 
     // 4. Return final text

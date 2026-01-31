@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { LeftPanel } from "./components/LeftPanel";
 import { RightPanel } from "./components/RightPanel";
 import {
@@ -10,6 +10,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+// Breakpoint for responsive layout (md = 768px)
+const MD_BREAKPOINT = 768;
+
 // Configuration for split sizes
 const DEFAULT_LEFT_PCT = 30; // Default Left Width % (Right is 70%)
 const HOVER_LEFT_PCT = 70; // Left Width % when hovering Left
@@ -19,10 +22,22 @@ const App: React.FC = () => {
   const [leftWidth, setLeftWidth] = useState(HOVER_LEFT_PCT); // Start with Left panel larger
   const [isLocked, setIsLocked] = useState(true);
   const [maximized, setMaximized] = useState<"left" | "right" | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileView, setMobileView] = useState<"left" | "right">("left"); // Which panel to show on mobile
 
   // Refs for hover detection
   const containerRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<number | null>(null);
+
+  // Check screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < MD_BREAKPOINT);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // -- Handlers --
 
@@ -75,7 +90,7 @@ const App: React.FC = () => {
       {/* MacOS Window Frame */}
       <div className="relative w-full h-full max-w-7xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-300/50">
         {/* Fake Window Controls (Traffic Lights) */}
-        <div className="h-8 bg-gray-100 border-b border-gray-200 flex items-center px-4 space-x-2 shrink-0 z-20">
+        <div className="h-8 bg-gray-100 border-b border-gray-200 flex items-center px-4 space-x-2 shrink-0 z-20 print:hidden">
           <div className="w-3 h-3 rounded-full bg-red-400"></div>
           <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
           <div className="w-3 h-3 rounded-full bg-green-400"></div>
@@ -84,6 +99,32 @@ const App: React.FC = () => {
           </div>
         </div>
 
+        {/* Mobile Tab Switcher */}
+        {isMobile && (
+          <div className="flex bg-gray-100 border-b border-gray-200 print:hidden">
+            <button
+              onClick={() => setMobileView("left")}
+              className={`flex-1 py-3 text-sm font-medium transition-all ${
+                mobileView === "left"
+                  ? "bg-white text-amber-600 shadow-sm"
+                  : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              📊 記帳本
+            </button>
+            <button
+              onClick={() => setMobileView("right")}
+              className={`flex-1 py-3 text-sm font-medium transition-all ${
+                mobileView === "right"
+                  ? "bg-white text-amber-600 shadow-sm"
+                  : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              🤖 AI 助理
+            </button>
+          </div>
+        )}
+
         {/* Content Area */}
         <div
           ref={containerRef}
@@ -91,8 +132,12 @@ const App: React.FC = () => {
         >
           {/* LEFT PANEL */}
           <div
-            className="h-full transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] overflow-hidden relative"
-            style={{ width: `${currentLeftWidth}%` }}
+            className={`h-full transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] overflow-hidden relative print:!w-full ${
+              isMobile 
+                ? mobileView === "left" ? "w-full" : "w-0"
+                : ""
+            }`}
+            style={!isMobile ? { width: `${currentLeftWidth}%` } : undefined}
             onMouseEnter={handleMouseEnterLeft}
           >
             <div className="w-full h-full min-w-[320px]">
@@ -102,47 +147,49 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* DIVIDER / CONTROLS (Central Pill) */}
-          <div
-            className={`absolute top-0 bottom-0 z-30 flex items-center justify-center w-0 transition-all duration-500`}
-            style={{
-              left: `${currentLeftWidth}%`,
-              opacity: maximized ? 0 : 1, // Hide central control when maximized
-              pointerEvents: maximized ? "none" : "auto",
-            }}
-          >
-            {/* Floating Control Pill */}
-            <div className="bg-white/90 backdrop-blur shadow-lg border border-gray-200 rounded-full py-2 px-1 flex flex-col gap-2 transform -translate-x-1/2">
-              <button
-                onClick={toggleLock}
-                className={`p-1.5 rounded-full hover:bg-gray-100 transition ${isLocked ? "text-red-500" : "text-gray-400"}`}
-                title={isLocked ? "Unlock View" : "Lock View"}
-              >
-                {isLocked ? <Lock size={16} /> : <Unlock size={16} />}
-              </button>
+          {/* DIVIDER / CONTROLS (Central Pill) - Hidden on mobile */}
+          {!isMobile && (
+            <div
+              className={`absolute top-0 bottom-0 z-30 flex items-center justify-center w-0 transition-all duration-500 print:hidden`}
+              style={{
+                left: `${currentLeftWidth}%`,
+                opacity: maximized ? 0 : 1, // Hide central control when maximized
+                pointerEvents: maximized ? "none" : "auto",
+              }}
+            >
+              {/* Floating Control Pill */}
+              <div className="bg-white/90 backdrop-blur shadow-lg border border-gray-200 rounded-full py-2 px-1 flex flex-col gap-2 transform -translate-x-1/2">
+                <button
+                  onClick={toggleLock}
+                  className={`p-1.5 rounded-full hover:bg-gray-100 transition ${isLocked ? "text-red-500" : "text-gray-400"}`}
+                  title={isLocked ? "Unlock View" : "Lock View"}
+                >
+                  {isLocked ? <Lock size={16} /> : <Unlock size={16} />}
+                </button>
 
-              <div className="w-4 h-px bg-gray-200 mx-auto"></div>
+                <div className="w-4 h-px bg-gray-200 mx-auto"></div>
 
-              <button
-                onClick={maximizeLeft}
-                className={`p-1.5 rounded-full hover:bg-gray-100 transition ${maximized === "left" ? "text-blue-600" : "text-gray-500"}`}
-                title="Full Screen Ledger"
-              >
-                <ArrowRightToLine size={16} />
-              </button>
+                <button
+                  onClick={maximizeLeft}
+                  className={`p-1.5 rounded-full hover:bg-gray-100 transition ${maximized === "left" ? "text-blue-600" : "text-gray-500"}`}
+                  title="Full Screen Ledger"
+                >
+                  <ArrowRightToLine size={16} />
+                </button>
 
-              <button
-                onClick={maximizeRight}
-                className={`p-1.5 rounded-full hover:bg-gray-100 transition ${maximized === "right" ? "text-blue-600" : "text-gray-500"}`}
-                title="Full Screen Chat"
-              >
-                <ArrowLeftToLine size={16} />
-              </button>
+                <button
+                  onClick={maximizeRight}
+                  className={`p-1.5 rounded-full hover:bg-gray-100 transition ${maximized === "right" ? "text-blue-600" : "text-gray-500"}`}
+                  title="Full Screen Chat"
+                >
+                  <ArrowLeftToLine size={16} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* RESTORE BUTTONS (Edge Overlays) */}
-          {maximized === "left" && (
+          {/* RESTORE BUTTONS (Edge Overlays) - Hidden on mobile */}
+          {!isMobile && maximized === "left" && (
             <div className="absolute right-4 top-1/2 -translate-y-1/2 z-40 animate-fade-in">
               <button
                 onClick={restoreView}
@@ -154,7 +201,7 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {maximized === "right" && (
+          {!isMobile && maximized === "right" && (
             <div className="absolute left-4 top-1/2 -translate-y-1/2 z-40 animate-fade-in">
               <button
                 onClick={restoreView}
@@ -168,8 +215,12 @@ const App: React.FC = () => {
 
           {/* RIGHT PANEL */}
           <div
-            className="h-full transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] overflow-hidden bg-white relative"
-            style={{ width: `${100 - currentLeftWidth}%` }}
+            className={`h-full transition-all duration-500 ease-[cubic-bezier(0.25,0.8,0.25,1)] overflow-hidden bg-white relative print:hidden ${
+              isMobile 
+                ? mobileView === "right" ? "w-full" : "w-0"
+                : ""
+            }`}
+            style={!isMobile ? { width: `${100 - currentLeftWidth}%` } : undefined}
             onMouseEnter={handleMouseEnterRight}
           >
             <div className="w-full h-full min-w-[320px]">

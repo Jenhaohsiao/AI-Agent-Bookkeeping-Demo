@@ -7,61 +7,225 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --primary: #f59e0b;
+        --primary-dark: #d97706;
+        --primary-light: #fef3c7;
+        --secondary: #3b82f6;
+        --success: #10b981;
+        --danger: #ef4444;
+        --bg-main: #f8fafc;
+        --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+      
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #eef2f5;
-        overflow: hidden; /* Manage scroll inside components */
+        background: linear-gradient(135deg, #fef9e7 0%, #f8fafc 50%, #e0f2fe 100%);
+        overflow: hidden;
       }
-      /* Custom Scrollbar for MacOS feel */
+      
+      /* Modern Card Style */
+      .modern-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: var(--card-shadow);
+        border: none;
+      }
+      
+      /* Gradient Headers */
+      .gradient-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        border-radius: 20px 20px 0 0;
+      }
+      
+      /* Icon Button */
+      .icon-btn {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 10px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+      
+      .icon-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      
+      .icon-btn.active {
+        background: var(--primary);
+        color: white;
+      }
+      
+      /* Amount Display */
+      .amount-display {
+        font-size: 2.5rem;
+        font-weight: 700;
+        letter-spacing: -1px;
+      }
+      
+      /* Donut Chart Center */
+      .donut-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+      
+      /* Custom Scrollbar */
       ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
       }
       ::-webkit-scrollbar-track {
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 4px;
+        background: #e2e8f0;
+        border-radius: 10px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
+        background: #cbd5e1;
+      }
+      
+      /* Smooth transitions */
+      * {
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+      }
+      
+      /* Badge styles */
+      .category-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
       }
 
       /* Print Styles for PDF Export */
       @media print {
-        body {
-          visibility: hidden;
-          background-color: white;
+        @page {
+          size: A4;
+          margin: 10mm;
+        }
+
+        html, body {
+          background: white !important;
+          background-color: white !important;
+          overflow: visible !important;
+          height: auto !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        
+        /* Hide non-printable elements */
+        .no-print {
+          display: none !important;
+        }
+        
+        /* Reset root layout for print */
+        #root {
+          display: block !important;
+          width: 100% !important;
+          height: auto !important;
           overflow: visible !important;
         }
         
-        /* Hide all non-printable elements by default */
-        body * {
-          visibility: hidden;
-        }
-
-        /* Only show the specific printable section */
-        .printable-section, .printable-section * {
-          visibility: visible;
-        }
-
-        .printable-section {
-          position: absolute;
-          left: 0;
-          top: 0;
+        #root > div {
+          display: block !important;
           width: 100% !important;
           height: auto !important;
-          margin: 0;
-          padding: 20px;
-          background-color: white;
-          z-index: 9999;
           overflow: visible !important;
         }
-
-        /* Hide specific interactive elements during print even inside printable section */
-        .no-print {
+        
+        /* Hide right panel (AI chat) completely */
+        #root > div > div:nth-child(2),
+        #root > div > div:last-child:not(:first-child) {
           display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        
+        /* Make left panel full width and scrollable */
+        #root > div > div:first-child {
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+          overflow: visible !important;
+          flex: none !important;
+          position: static !important;
+        }
+        
+        /* Allow content to flow to multiple pages */
+        .printable-section {
+          display: block !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+          overflow: visible !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          background: white !important;
+        }
+        
+        .printable-section > * {
+          margin-bottom: 10px !important;
+        }
+        
+        /* Allow page breaks between sections but not inside */
+        .printable-section > div {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+
+        /* Charts */
+        .print-compact {
+          height: 150px !important;
+          min-height: 150px !important;
+        }
+        
+        .recharts-wrapper,
+        .recharts-responsive-container {
+          width: 100% !important;
+        }
+
+        /* Table styling - ensure visibility */
+        table {
+          width: 100% !important;
+          page-break-inside: auto !important;
+        }
+        
+        thead {
+          display: table-header-group !important;
+        }
+        
+        tbody tr {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        
+        /* Ensure scrollable containers show all content */
+        .overflow-y-auto,
+        .overflow-x-auto {
+          overflow: visible !important;
+          height: auto !important;
+          max-height: none !important;
+        }
+        
+        /* Show print footer */
+        .hidden.print\\:block {
+          display: block !important;
         }
       }
     </style>
@@ -74,7 +238,8 @@
     "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
     "recharts": "https://esm.sh/recharts@^3.7.0",
     "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "date-fns": "https://esm.sh/date-fns@^4.1.0"
+    "date-fns": "https://esm.sh/date-fns@^4.1.0",
+    "opencc-js": "https://esm.sh/opencc-js@^1.0.5"
   }
 }
 </script>
